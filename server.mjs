@@ -11,26 +11,22 @@ const HOST = process.env.HOST || "0.0.0.0";
 
 const clientDir = join(__dirname, "dist", "client");
 
-// Hashed assets (_astro/*) — long cache, immutable
-const serveAssets = sirv(join(clientDir, "_astro"), {
-  maxAge: 31536000,
-  immutable: true,
-});
-
-// Root static files (favicon.ico, icons, video, pdf) — short cache
-const servePublic = sirv(clientDir, {
+// All static files from client dir (includes _astro/*, favicon, images, video, pdf)
+// ignores: false — Astro generates filenames with @ (e.g. index@_@astro.css) which
+// sirv's default ignore pattern rejects
+const serveStatic = sirv(clientDir, {
+  ignores: false,
   maxAge: 3600,
+  setHeaders(res, pathname) {
+    // Hashed assets get immutable long cache
+    if (pathname.startsWith("/_astro/")) {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    }
+  },
 });
 
 const server = http.createServer((req, res) => {
-  // Hashed assets first
-  if (req.url?.startsWith("/_astro/")) {
-    serveAssets(req, res, () => astroHandler(req, res));
-    return;
-  }
-
-  // Other static files (favicon, images, etc.)
-  servePublic(req, res, () => {
+  serveStatic(req, res, () => {
     astroHandler(req, res);
   });
 });
