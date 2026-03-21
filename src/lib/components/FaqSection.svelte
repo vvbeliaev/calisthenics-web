@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Accordion from "$lib/components/ui/accordion";
-	import { faq } from "../data/content";
+	import { faq } from "../../data/content";
 </script>
 
 <section id="faq" class="relative overflow-hidden py-24 sm:py-32">

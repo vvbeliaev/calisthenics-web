@@ -1,0 +1,86 @@
+---
+import { Image } from "astro:assets";
+import { testimonials } from "../../data/content";
+
+// Real before/after transformation photos (combined images)
+import photo1 from "../../assets/images/photo-1.webp";
+import photo2 from "../../assets/images/photo-2.webp";
+import photo3 from "../../assets/images/photo-3.webp";
+import av1 from "../../assets/images/avatar-1.png";
+import av2 from "../../assets/images/avatar-2.png";
+import av3 from "../../assets/images/avatar-3.png";
+
+const images = [
+	{ photo: photo1, avatar: av1 },
+	{ photo: photo2, avatar: av2 },
+	{ photo: photo3, avatar: av3 },
+];
+---
+
+<section id="testimonials" class="relative overflow-hidden py-24 sm:py-32">
+	<!-- Background glow -->
+	<div class="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-primary/3 blur-3xl"></div>
+	<div class="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-accent/3 blur-3xl"></div>
+
+	<div class="relative mx-auto max-w-7xl px-6">
+		<!-- Section header -->
+		<div class="reveal text-center">
+			<span class="text-sm font-medium uppercase tracking-widest text-primary">Результаты</span>
+			<h2 class="mt-4 text-4xl sm:text-5xl md:text-6xl">
+				{testimonials.title.split("!")[0]}
+				<span class="bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent">!</span>
+			</h2>
+			<p class="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+				{testimonials.subtitle}
+			</p>
+		</div>
+
+		<!-- Testimonial cards -->
+		<div class="mt-16 space-y-20">
+			{testimonials.items.map((item, i) => {
+				const imgs = images[i];
+				const isReversed = i % 2 !== 0;
+				return (
+					<div class={`reveal grid items-center gap-10 lg:grid-cols-[1.2fr_1fr] ${isReversed ? 'lg:direction-rtl' : ''}`}>
+						<!-- Before / After Photo -->
+						<div class={`relative overflow-hidden rounded-2xl border border-border/30 ${isReversed ? 'lg:order-2' : ''}`}>
+							<Image
+								src={imgs.photo}
+								alt={`${item.name} — трансформация до и после`}
+								class="w-full h-auto object-cover"
+								widths={[400, 700, 1000]}
+								sizes="(max-width: 1024px) 90vw, 55vw"
+							/>
+							<!-- Gradient overlay bottom -->
+							<div class="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-background/60 to-transparent"></div>
+							<!-- Labels -->
+							<span class="absolute bottom-3 left-4 rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">До</span>
+							<span class="absolute bottom-3 right-4 rounded-full bg-primary/90 px-3 py-1 text-xs font-medium text-background backdrop-blur-sm">После</span>
+						</div>
+
+						<!-- Text -->
+						<div class={`${isReversed ? 'lg:order-1' : ''}`}>
+							<div class="flex items-center gap-4">
+								<Image
+									src={imgs.avatar}
+									alt={item.name}
+									class="h-14 w-14 rounded-full border-2 border-primary/30 object-cover"
+									width={56}
+									height={56}
+								/>
+								<div>
+									<h3 class="font-display text-2xl tracking-wide">{item.name}</h3>
+								</div>
+							</div>
+							<blockquote class="mt-6 border-l-2 border-primary/30 pl-6">
+								<p class="text-muted-foreground leading-relaxed italic">
+									"{item.text}"
+								</p>
+							</blockquote>
+						</div>
+					</div>
+				);
+			})}
+		</div>
+	</div>
+</section>

@@ -1,24 +1,48 @@
 <script lang="ts">
+	import { actions } from "astro:actions";
 	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
-	import { leadForm } from "../data/content";
+	import { leadForm } from "../../data/content";
 	import { onMount } from "svelte";
 
 	let name = $state("");
-	let email = $state("");
-	let phone = $state("");
-	let submitted = $state(false);
+	let contact = $state("");
+	let status = $state<"idle" | "loading" | "success" | "error">("idle");
+	let errorMessage = $state("");
 	let open = $state(false);
 
-	function handleSubmit(e: Event) {
+	async function handleSubmit(e: Event) {
 		e.preventDefault();
-		submitted = true;
+
+		if (!contact.trim()) {
+			status = "error";
+			errorMessage = "Укажите email, телефон или Telegram";
+			setTimeout(() => { status = "idle"; }, 3000);
+			return;
+		}
+
+		status = "loading";
+
+		const { error } = await actions.submitLead({
+			name: name || undefined,
+			contact: contact.trim(),
+		});
+
+		if (error) {
+			status = "error";
+			errorMessage = error.message || "Произошла ошибка. Попробуйте позже.";
+			setTimeout(() => {
+				status = "idle";
+			}, 3000);
+			return;
+		}
+
+		status = "success";
 		setTimeout(() => {
-			submitted = false;
+			status = "idle";
 			open = false;
 			name = "";
-			email = "";
-			phone = "";
+			contact = "";
 		}, 2000);
 	}
 
@@ -82,41 +106,40 @@
 								type="text"
 								bind:value={name}
 								placeholder="Ваше имя"
-								required
 								class="w-full rounded-xl border border-border/50 bg-background/50 px-4 py-3 text-foreground placeholder:text-muted-foreground/50 transition-colors focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
 							/>
 						</div>
 						<div>
-							<label for="dialog-email" class="mb-2 block text-sm text-muted-foreground">Email</label>
+							<label for="dialog-contact" class="mb-2 block text-sm text-muted-foreground">
+								Email, телефон или Telegram <span class="text-primary">*</span>
+							</label>
 							<input
-								id="dialog-email"
-								type="email"
-								bind:value={email}
-								placeholder="your@email.com"
-								required
-								class="w-full rounded-xl border border-border/50 bg-background/50 px-4 py-3 text-foreground placeholder:text-muted-foreground/50 transition-colors focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
-							/>
-						</div>
-						<div>
-							<label for="dialog-phone" class="mb-2 block text-sm text-muted-foreground">Телефон</label>
-							<input
-								id="dialog-phone"
-								type="tel"
-								bind:value={phone}
-								placeholder="+7 (___) ___-__-__"
+								id="dialog-contact"
+								type="text"
+								bind:value={contact}
+								placeholder="email / +7... / @username"
 								class="w-full rounded-xl border border-border/50 bg-background/50 px-4 py-3 text-foreground placeholder:text-muted-foreground/50 transition-colors focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
 							/>
 						</div>
 
 						<Button
 							type="submit"
-							class="mt-6! w-full rounded-xl bg-linear-to-r from-brand-orange to-brand-gold py-4 text-lg font-semibold text-background transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,132,0,0.3)] border-none h-auto"
+							disabled={status === "loading" || status === "success"}
+							class="mt-6! w-full rounded-xl bg-linear-to-r from-brand-orange to-brand-gold py-4 text-lg font-semibold text-background transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,132,0,0.3)] border-none h-auto disabled:opacity-70"
 						>
-							{#if submitted}
+							{#if status === "loading"}
+								<svg class="h-5 w-5 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+								</svg>
+								Отправка...
+							{:else if status === "success"}
 								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 								</svg>
 								Отправлено!
+							{:else if status === "error"}
+								{errorMessage}
 							{:else}
 								{leadForm.cta}
 							{/if}
