@@ -6,7 +6,7 @@ interface TelegramUpdate {
   message?: {
     chat: { id: number };
     text?: string;
-    from?: { first_name?: string; username?: string };
+    from?: { first_name?: string; last_name?: string; username?: string };
   };
 }
 
@@ -43,15 +43,36 @@ export const POST: APIRoute = async ({ request }) => {
   console.log(`[TG Webhook] Chat ${chatId}, text: "${text}"`);
 
   if (text === "/start") {
-    const firstName = message.from?.first_name || "друг";
+    const firstName = message.from?.first_name || "";
+    const lastName = message.from?.last_name || "";
+    const username = message.from?.username || "";
+    const displayName = firstName || "друг";
 
-    // Send welcome message
+    // Notify owner about new bot start
+    const ownerChatId = process.env.TG_CHAT_ID ?? import.meta.env.TG_CHAT_ID;
+    if (ownerChatId && String(chatId) !== String(ownerChatId)) {
+      const lines = [
+        "<b>🔔 Новый пользователь бота</b>",
+        "",
+      ];
+      if (firstName || lastName) lines.push(`<b>Имя:</b> ${escapeHtml([firstName, lastName].filter(Boolean).join(" "))}`);
+      if (username) lines.push(`<b>Username:</b> @${escapeHtml(username)}`);
+      lines.push(`<b>Chat ID:</b> ${chatId}`);
+      lines.push(
+        "",
+        `<i>📅 ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}</i>`,
+      );
+
+      await sendMessage(botToken, Number(ownerChatId), lines.join("\n"));
+    }
+
+    // Send welcome message to user
     console.log("[TG Webhook] Sending welcome message...");
     await sendMessage(
       botToken,
       chatId,
       [
-        `Привет, <b>${escapeHtml(firstName)}</b>! 👋`,
+        `Привет, <b>${escapeHtml(displayName)}</b>! 👋`,
         "",
         "Добро пожаловать в <b>Caliathletics</b> — персональные тренировки с собственным весом тела.",
         "",
