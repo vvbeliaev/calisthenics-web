@@ -2,6 +2,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { leadForm } from "../data/content";
+	import { onMount } from "svelte";
 
 	let name = $state("");
 	let email = $state("");
@@ -20,6 +21,17 @@
 			phone = "";
 		}, 2000);
 	}
+
+	onMount(() => {
+		// Intercept all #contact links to open dialog directly
+		document.addEventListener("click", (e) => {
+			const target = (e.target as HTMLElement).closest('a[href="#contact"]');
+			if (target) {
+				e.preventDefault();
+				open = true;
+			}
+		});
+	});
 </script>
 
 <section id="contact" class="relative overflow-hidden py-24 sm:py-32">
@@ -54,7 +66,7 @@
 
 				<Dialog.Content class="sm:max-w-md border-border/50 bg-card/95 backdrop-blur-xl">
 					<Dialog.Header>
-						<Dialog.Title class="font-display text-2xl tracking-wide text-center">
+						<Dialog.Title class="font-display text-2xl tracking-wide text-center pr-8">
 							ПОЛУЧИТЬ ПЛАН ТРЕНИРОВОК
 						</Dialog.Title>
 						<Dialog.Description class="text-center text-muted-foreground">
