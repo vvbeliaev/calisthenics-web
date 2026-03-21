@@ -14,7 +14,7 @@
   <div class="relative mx-auto max-w-4xl px-6 text-center">
     <!-- Header -->
     <span class="text-sm font-medium uppercase tracking-widest text-primary"
-      >Бесплатно</span
+      >Мой подарок тебе</span
     >
     <h2
       class="mt-4 font-display text-4xl tracking-wide sm:text-5xl md:text-6xl"
