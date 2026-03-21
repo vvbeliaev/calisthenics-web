@@ -1,0 +1,67 @@
+---
+import { Image } from "astro:assets";
+import challengeImg from "../assets/images/challenge.webp";
+import { challenge } from "../data/content";
+---
+
+<section id="challenge" class="relative overflow-hidden py-24 sm:py-32">
+	<!-- Full-width background image -->
+	<div class="absolute inset-0">
+		<Image
+			src={challengeImg}
+			alt="90-дневный челлендж"
+			class="h-full w-full object-cover"
+			widths={[800, 1200, 1920]}
+			sizes="100vw"
+		/>
+		<div class="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/50"></div>
+	</div>
+
+	<div class="relative z-10 mx-auto max-w-7xl px-6">
+		<div class="max-w-2xl">
+			<span class="text-sm font-medium uppercase tracking-widest text-primary">Трансформация</span>
+			<h2 class="mt-4 text-4xl sm:text-5xl md:text-7xl leading-[1.1]">
+				{challenge.title.toUpperCase()}
+				<br />
+				<span class="bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent">
+					{challenge.titleAccent.toUpperCase()}
+				</span>
+			</h2>
+
+			<p class="mt-8 text-lg text-muted-foreground leading-relaxed">
+				{challenge.description}
+			</p>
+			<p class="mt-4 text-muted-foreground leading-relaxed">
+				{challenge.descriptionExtra}
+			</p>
+
+			<!-- Stats -->
+			<div class="mt-10 flex gap-8">
+				<div>
+					<div class="font-display text-4xl text-primary">90</div>
+					<div class="text-sm text-muted-foreground">дней</div>
+				</div>
+				<div class="h-14 w-px bg-border/50"></div>
+				<div>
+					<div class="font-display text-4xl text-primary">4</div>
+					<div class="text-sm text-muted-foreground">тренировки/нед</div>
+				</div>
+				<div class="h-14 w-px bg-border/50"></div>
+				<div>
+					<div class="font-display text-4xl text-primary">100%</div>
+					<div class="text-sm text-muted-foreground">результат</div>
+				</div>
+			</div>
+
+			<a
+				href="#contact"
+				class="mt-10 inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-orange to-brand-gold px-8 py-4 text-lg font-semibold text-background transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,132,0,0.4)]"
+			>
+				{challenge.cta}
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+				</svg>
+			</a>
+		</div>
+	</div>
+</section>

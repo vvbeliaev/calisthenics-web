@@ -1,0 +1,85 @@
+---
+import { Image } from "astro:assets";
+import programDashboard from "../assets/images/program-dashboard.webp";
+import { program } from "../data/content";
+
+const scheduleStyles: Record<string, { color: string; bg: string }> = {
+	PUSH: { color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20" },
+	LEGS: { color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
+	REST: { color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
+	PULL: { color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
+	CORE: { color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/20" },
+};
+---
+
+<section id="program" class="relative overflow-hidden py-24 sm:py-32">
+	<!-- Background -->
+	<div class="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background"></div>
+
+	<div class="relative mx-auto max-w-7xl px-6">
+		<!-- Section header -->
+		<div class="text-center">
+			<span class="text-sm font-medium uppercase tracking-widest text-primary">Расписание</span>
+			<h2 class="mt-4 text-4xl sm:text-5xl md:text-6xl">
+				ОБНОВЛЁННАЯ
+				<span class="bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent">
+					ПРОГРАММА
+				</span>
+			</h2>
+			<p class="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+				{program.subtitle}
+			</p>
+		</div>
+
+		<!-- Two-column layout -->
+		<div class="mt-16 grid items-center gap-12 lg:grid-cols-2">
+			<!-- Schedule cards -->
+			<div class="space-y-3">
+				{program.schedule.map((item) => {
+					const style = scheduleStyles[item.type] || scheduleStyles.REST;
+					return (
+						<div class={`group flex items-center gap-4 rounded-xl border p-4 transition-all duration-300 hover:scale-[1.02] ${style.bg}`}>
+							<div class="flex-shrink-0">
+								<span class="text-xs uppercase tracking-wider text-muted-foreground">{item.day}</span>
+								<div class={`font-display text-2xl tracking-wide ${style.color}`}>{item.type}</div>
+							</div>
+							<div class="h-10 w-px bg-border/50"></div>
+							<div>
+								<span class="font-semibold text-foreground">{item.label}</span>
+								<p class="text-sm text-muted-foreground">{item.muscles}</p>
+							</div>
+						</div>
+					);
+				})}
+			</div>
+
+			<!-- Image + description -->
+			<div class="relative">
+				<div class="overflow-hidden rounded-2xl border border-border/30">
+					<Image
+						src={programDashboard}
+						alt="Упражнения калистеники"
+						class="w-full object-cover"
+						widths={[400, 600, 800]}
+						sizes="(max-width: 1024px) 100vw, 50vw"
+					/>
+				</div>
+				<!-- Description card overlay -->
+				<div class="mt-6 rounded-2xl border border-border/30 bg-card/80 p-6 backdrop-blur-sm">
+					<p class="text-muted-foreground leading-relaxed">
+						{program.description}
+					</p>
+					<a
+						href="#contact"
+						class="mt-6 inline-flex items-center gap-2 rounded-full bg-linear-to-r from-brand-orange to-brand-gold px-6 py-3 font-semibold text-background transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(255,132,0,0.3)]"
+					>
+						{program.cta}
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+						</svg>
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>

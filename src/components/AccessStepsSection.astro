@@ -1,0 +1,71 @@
+---
+import { Image } from "astro:assets";
+import accessBg from "../assets/images/access-bg.webp";
+import { accessSteps } from "../data/content";
+
+const stepIcons = [
+	// 1 - Choose program
+	`<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>`,
+	// 2 - Payment
+	`<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>`,
+	// 3 - Instant access
+	`<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`,
+	// 4 - Start training
+	`<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+];
+---
+
+<section id="access" class="relative overflow-hidden py-24 sm:py-32">
+	<!-- Subtle background -->
+	<div class="absolute inset-0 bg-gradient-to-b from-background via-card/20 to-background"></div>
+
+	<div class="relative mx-auto max-w-7xl px-6">
+		<!-- Section header -->
+		<div class="text-center">
+			<span class="text-sm font-medium uppercase tracking-widest text-primary">Как начать</span>
+			<h2 class="mt-4 text-4xl sm:text-5xl md:text-6xl">
+				{accessSteps.title.toUpperCase()}
+				<br />
+				<span class="bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent">
+					{accessSteps.titleAccent.toUpperCase()}
+				</span>
+			</h2>
+		</div>
+
+		<!-- Steps timeline -->
+		<div class="relative mt-16">
+			<!-- Connecting line (desktop) -->
+			<div class="absolute top-10 left-0 right-0 hidden h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent lg:block"></div>
+
+			<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+				{accessSteps.steps.map((step, i) => (
+					<div class="group relative text-center">
+						<!-- Step number circle -->
+						<div class="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-primary/30 bg-card transition-all duration-500 group-hover:border-primary group-hover:shadow-[0_0_25px_rgba(255,132,0,0.2)]">
+							<div class="text-primary" set:html={stepIcons[i]} />
+							<span class="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-br from-brand-orange to-brand-gold text-xs font-bold text-background">
+								{i + 1}
+							</span>
+						</div>
+
+						<h3 class="font-display text-xl tracking-wide">{step.title}</h3>
+						<p class="mt-3 text-sm leading-relaxed text-muted-foreground">{step.description}</p>
+					</div>
+				))}
+			</div>
+		</div>
+
+		<!-- CTA -->
+		<div class="mt-16 text-center">
+			<a
+				href="#contact"
+				class="inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-orange to-brand-gold px-8 py-4 text-lg font-semibold text-background transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,132,0,0.4)]"
+			>
+				{accessSteps.cta}
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+				</svg>
+			</a>
+		</div>
+	</div>
+</section>

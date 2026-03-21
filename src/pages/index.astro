@@ -1,0 +1,30 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/Navbar.svelte";
+import HeroSection from "../components/HeroSection.astro";
+import AdvantagesSection from "../components/AdvantagesSection.astro";
+import ProgramSection from "../components/ProgramSection.astro";
+import TestimonialsSection from "../components/TestimonialsSection.astro";
+import ChallengeSection from "../components/ChallengeSection.astro";
+import AccessStepsSection from "../components/AccessStepsSection.astro";
+import CatalogSection from "../components/CatalogSection.astro";
+import FaqSection from "../components/FaqSection.svelte";
+import LeadFormSection from "../components/LeadFormSection.svelte";
+import FooterSection from "../components/FooterSection.astro";
+---
+
+<Layout>
+	<Navbar client:load />
+	<main>
+		<HeroSection />
+		<AdvantagesSection />
+		<ProgramSection />
+		<TestimonialsSection />
+		<ChallengeSection />
+		<AccessStepsSection />
+		<CatalogSection />
+		<FaqSection client:visible />
+		<LeadFormSection client:visible />
+	</main>
+	<FooterSection />
+</Layout>
