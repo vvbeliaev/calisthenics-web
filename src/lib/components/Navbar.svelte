@@ -58,7 +58,7 @@
 		<!-- CTA -->
 		<div class="hidden lg:block">
 			<Button
-				href="#contact"
+				href="https://t.me/vvb_CALIATHLETICS_bot" target="_blank" rel="noopener noreferrer"
 				class="rounded-full bg-linear-to-r from-brand-orange to-brand-gold px-6 py-2 text-sm font-semibold text-background border-none transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,132,0,0.35)] hover:scale-105"
 			>
 				Записаться
@@ -96,7 +96,7 @@
 					{/each}
 					<div class="mt-6 border-t border-border/30 pt-6">
 						<Button
-							href="#contact"
+							href="https://t.me/vvb_CALIATHLETICS_bot" target="_blank" rel="noopener noreferrer"
 							class="w-full rounded-full bg-linear-to-r from-brand-orange to-brand-gold text-background font-semibold border-none"
 							onclick={() => (mobileOpen = false)}
 						>

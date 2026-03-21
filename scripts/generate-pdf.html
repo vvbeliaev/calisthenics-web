@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #06100f;
+    --orange: #ff8400;
+    --gold: #ffd500;
+    --white: #ffffff;
+    --white-70: rgba(255,255,255,0.7);
+    --white-40: rgba(255,255,255,0.4);
+    --card-bg: rgba(255,255,255,0.05);
+    --card-border: rgba(255,255,255,0.08);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--white);
+    width: 210mm;
+    min-height: 297mm;
+  }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    padding: 14mm 16mm;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  .page::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 80%;
+    height: 80%;
+    background: radial-gradient(ellipse, rgba(255,132,0,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .page::after {
+    content: '';
+    position: absolute;
+    bottom: -40%;
+    left: -20%;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(ellipse, rgba(255,213,0,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ===== PAGE 1 — HEADER ===== */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8mm;
+    position: relative;
+    z-index: 1;
+  }
+
+  .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22pt;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--orange), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .brand-sub {
+    font-size: 7pt;
+    color: var(--white-40);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    text-align: center;
+    padding: 10mm 6mm 8mm;
+    position: relative;
+    z-index: 1;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,132,0,0.06) 0%, rgba(6,16,15,0.8) 100%);
+    margin-bottom: 8mm;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    font-size: 6.5pt;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid rgba(255,213,0,0.3);
+    padding: 2mm 5mm;
+    border-radius: 30px;
+    margin-bottom: 5mm;
+  }
+
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32pt;
+    line-height: 1.05;
+    letter-spacing: 1px;
+    margin-bottom: 4mm;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--orange), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-desc {
+    font-size: 9pt;
+    color: var(--white-70);
+    line-height: 1.6;
+    max-width: 400px;
+    margin: 0 auto 5mm;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 10mm;
+    margin-top: 4mm;
+  }
+
+  .hero-stat {
+    text-align: center;
+  }
+
+  .hero-stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22pt;
+    background: linear-gradient(135deg, var(--orange), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-stat-label {
+    font-size: 6.5pt;
+    color: var(--white-40);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ===== SCHEDULE TABLE ===== */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18pt;
+    letter-spacing: 1px;
+    margin-bottom: 4mm;
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-title span {
+    background: linear-gradient(135deg, var(--orange), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .schedule {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 2mm;
+    position: relative;
+    z-index: 1;
+  }
+
+  .schedule tr.workout td {
+    background: var(--card-bg);
+    padding: 3.5mm 4mm;
+    font-size: 8.5pt;
+    border: none;
+  }
+
+  .schedule tr.workout td:first-child {
+    border-radius: 8px 0 0 8px;
+    font-weight: 600;
+    width: 28mm;
+  }
+
+  .schedule tr.workout td:nth-child(2) {
+    font-weight: 600;
+    width: 32mm;
+  }
+
+  .schedule tr.workout td:last-child {
+    border-radius: 0 8px 8px 0;
+    color: var(--white-70);
+  }
+
+  .schedule tr.rest td {
+    background: rgba(255,255,255,0.02);
+    padding: 3mm 4mm;
+    font-size: 8.5pt;
+    color: var(--white-40);
+    border: none;
+  }
+
+  .schedule tr.rest td:first-child {
+    border-radius: 8px 0 0 8px;
+  }
+
+  .schedule tr.rest td:last-child {
+    border-radius: 0 8px 8px 0;
+  }
+
+  .day-badge {
+    display: inline-block;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 8pt;
+    letter-spacing: 2px;
+    padding: 1mm 3mm;
+    border-radius: 4px;
+    min-width: 18mm;
+    text-align: center;
+  }
+
+  .badge-push { background: rgba(255,132,0,0.15); color: var(--orange); }
+  .badge-legs { background: rgba(255,213,0,0.12); color: var(--gold); }
+  .badge-pull { background: rgba(255,160,0,0.15); color: #ffa000; }
+  .badge-core { background: rgba(255,100,0,0.12); color: #ff6400; }
+  .badge-rest { background: rgba(255,255,255,0.04); color: var(--white-40); }
+
+  /* ===== PAGE 2 ===== */
+  .exercises-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 6mm;
+  }
+
+  .exercise-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 4mm 5mm;
+  }
+
+  .exercise-card-header {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    margin-bottom: 2.5mm;
+  }
+
+  .exercise-card-icon {
+    width: 7mm;
+    height: 7mm;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10pt;
+    flex-shrink: 0;
+  }
+
+  .icon-push { background: rgba(255,132,0,0.15); }
+  .icon-legs { background: rgba(255,213,0,0.12); }
+  .icon-pull { background: rgba(255,160,0,0.15); }
+  .icon-core { background: rgba(255,100,0,0.12); }
+
+  .exercise-card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 12pt;
+    letter-spacing: 1px;
+  }
+
+  .exercise-card-subtitle {
+    font-size: 6.5pt;
+    color: var(--white-40);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .exercise-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .exercise-list li {
+    font-size: 7.5pt;
+    padding: 1.5mm 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .exercise-list li:last-child {
+    border-bottom: none;
+  }
+
+  .exercise-name {
+    color: var(--white-70);
+  }
+
+  .exercise-reps {
+    font-weight: 600;
+    font-size: 7pt;
+    color: var(--white-40);
+    white-space: nowrap;
+  }
+
+  /* ===== PRINCIPLES ===== */
+  .principles {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 3mm;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 6mm;
+  }
+
+  .principle {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 3.5mm 4mm;
+    text-align: center;
+  }
+
+  .principle-icon {
+    font-size: 14pt;
+    margin-bottom: 1.5mm;
+  }
+
+  .principle-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 9pt;
+    letter-spacing: 1px;
+    margin-bottom: 1mm;
+  }
+
+  .principle-desc {
+    font-size: 6pt;
+    color: var(--white-40);
+    line-height: 1.4;
+  }
+
+  /* ===== CTA ===== */
+  .cta-box {
+    background: linear-gradient(135deg, rgba(255,132,0,0.12), rgba(255,213,0,0.08));
+    border: 1px solid rgba(255,132,0,0.2);
+    border-radius: 12px;
+    padding: 6mm;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16pt;
+    letter-spacing: 1px;
+    margin-bottom: 2mm;
+  }
+
+  .cta-desc {
+    font-size: 8pt;
+    color: var(--white-70);
+    margin-bottom: 3mm;
+    line-height: 1.5;
+  }
+
+  .cta-button {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--orange), var(--gold));
+    color: var(--bg);
+    font-weight: 700;
+    font-size: 8pt;
+    padding: 3mm 8mm;
+    border-radius: 30px;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+  }
+
+  .cta-contacts {
+    margin-top: 3mm;
+    font-size: 7pt;
+    color: var(--white-40);
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    position: absolute;
+    bottom: 8mm;
+    left: 16mm;
+    right: 16mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 6pt;
+    color: var(--white-40);
+    z-index: 1;
+    border-top: 1px solid var(--card-border);
+    padding-top: 3mm;
+  }
+
+  .footer-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 8pt;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--orange), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .divider {
+    width: 30mm;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,132,0,0.3), transparent);
+    margin: 4mm auto;
+  }
+
+  .note-box {
+    background: rgba(255,255,255,0.02);
+    border-left: 2px solid var(--orange);
+    border-radius: 0 8px 8px 0;
+    padding: 3mm 4mm;
+    margin-bottom: 4mm;
+    position: relative;
+    z-index: 1;
+  }
+
+  .note-box p {
+    font-size: 7pt;
+    color: var(--white-40);
+    line-height: 1.5;
+  }
+
+  .note-box strong {
+    color: var(--white-70);
+  }
+
+  .levels-row {
+    display: flex;
+    gap: 2mm;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 5mm;
+  }
+
+  .level-chip {
+    flex: 1;
+    text-align: center;
+    padding: 2.5mm 2mm;
+    border-radius: 6px;
+    font-size: 6.5pt;
+    font-weight: 600;
+    border: 1px solid var(--card-border);
+  }
+
+  .level-chip.active {
+    background: linear-gradient(135deg, rgba(255,132,0,0.15), rgba(255,213,0,0.1));
+    border-color: rgba(255,132,0,0.3);
+    color: var(--gold);
+  }
+
+  .level-chip.muted {
+    color: var(--white-40);
+    background: var(--card-bg);
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== PAGE 1 ==================== -->
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="brand">CALIATHLETICS</div>
+      <div class="brand-sub">Тренировки с собственным весом</div>
+    </div>
+    <div style="font-size: 7pt; color: var(--white-40); text-align: right;">
+      caliathletics.ru<br>
+      <span style="font-size: 6pt;">v2.0 — 2025</span>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-badge">Персональный план тренировок</div>
+    <h1>Построй <span>силу</span>,<br>которая с тобой навсегда</h1>
+    <p class="hero-desc">
+      Готовый план тренировок 4 дня в неделю. Без оборудования. Только ты и твой вес.
+      Каждая тренировка прорабатывает всё тело через систему прогрессий.
+    </p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">4</div>
+        <div class="hero-stat-label">дня тренировок</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">3</div>
+        <div class="hero-stat-label">дня отдыха</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">45</div>
+        <div class="hero-stat-label">мин / тренировка</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">∞</div>
+        <div class="hero-stat-label">прогрессий</div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Расписание <span>на неделю</span></h2>
+
+  <table class="schedule">
+    <tr class="workout">
+      <td>Понедельник</td>
+      <td><span class="day-badge badge-push">PUSH</span></td>
+      <td>Грудь, плечи, трицепс — жимовые движения</td>
+    </tr>
+    <tr class="workout">
+      <td>Вторник</td>
+      <td><span class="day-badge badge-legs">LEGS</span></td>
+      <td>Ноги — сила и взрывная мощь</td>
+    </tr>
+    <tr class="rest">
+      <td>Среда</td>
+      <td><span class="day-badge badge-rest">REST</span></td>
+      <td>Активное восстановление, растяжка</td>
+    </tr>
+    <tr class="workout">
+      <td>Четверг</td>
+      <td><span class="day-badge badge-pull">PULL</span></td>
+      <td>Спина, бицепс, предплечья — тяговые движения</td>
+    </tr>
+    <tr class="workout">
+      <td>Пятница</td>
+      <td><span class="day-badge badge-core">CORE</span></td>
+      <td>Пресс, кардио, выносливость</td>
+    </tr>
+    <tr class="rest">
+      <td>Сб / Вс</td>
+      <td><span class="day-badge badge-rest">REST</span></td>
+      <td>Полный отдых — растяжка, дыхание, восстановление</td>
+    </tr>
+  </table>
+
+  <div class="divider" style="margin-top: 5mm;"></div>
+
+  <div class="note-box">
+    <p><strong>Прогрессия:</strong> Каждое упражнение имеет уровни сложности — от базового до продвинутого.
+    Начните с комфортного уровня и постепенно переходите к более сложным вариациям по мере роста силы.</p>
+  </div>
+
+  <div class="footer">
+    <span class="footer-brand">CALIATHLETICS</span>
+    <span>Построй силу, которая с тобой навсегда</span>
+    <span>Страница 1 / 2</span>
+  </div>
+</div>
+
+<!-- ==================== PAGE 2 ==================== -->
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="brand">CALIATHLETICS</div>
+      <div class="brand-sub">Детали программы</div>
+    </div>
+    <div style="font-size: 7pt; color: var(--white-40); text-align: right;">
+      План тренировок<br>
+      <span style="font-size: 6pt;">Уровень: Начинающий → Продвинутый</span>
+    </div>
+  </div>
+
+  <h2 class="section-title" style="margin-bottom: 2mm;">Программа <span>по дням</span></h2>
+
+  <div class="levels-row">
+    <div class="level-chip active">Начинающий</div>
+    <div class="level-chip active">Промежуточный</div>
+    <div class="level-chip active">Продвинутый</div>
+    <div class="level-chip muted">Гимнастика</div>
+    <div class="level-chip muted">Растяжка</div>
+  </div>
+
+  <div class="exercises-grid">
+    <!-- PUSH -->
+    <div class="exercise-card">
+      <div class="exercise-card-header">
+        <div class="exercise-card-icon icon-push">💪</div>
+        <div>
+          <div class="exercise-card-title">PUSH — Жимовая</div>
+          <div class="exercise-card-subtitle">Понедельник</div>
+        </div>
+      </div>
+      <ul class="exercise-list">
+        <li><span class="exercise-name">Отжимания от пола</span><span class="exercise-reps">4 × 8-15</span></li>
+        <li><span class="exercise-name">Алмазные отжимания</span><span class="exercise-reps">3 × 6-12</span></li>
+        <li><span class="exercise-name">Отжимания на брусьях</span><span class="exercise-reps">3 × 6-10</span></li>
+        <li><span class="exercise-name">Пайк-отжимания</span><span class="exercise-reps">3 × 6-10</span></li>
+        <li><span class="exercise-name">Отжимания узким хватом</span><span class="exercise-reps">3 × 8-12</span></li>
+        <li><span class="exercise-name">Планка → отжимание</span><span class="exercise-reps">3 × 6-8</span></li>
+      </ul>
+    </div>
+
+    <!-- LEGS -->
+    <div class="exercise-card">
+      <div class="exercise-card-header">
+        <div class="exercise-card-icon icon-legs">🦵</div>
+        <div>
+          <div class="exercise-card-title">LEGS — Ноги</div>
+          <div class="exercise-card-subtitle">Вторник</div>
+        </div>
+      </div>
+      <ul class="exercise-list">
+        <li><span class="exercise-name">Приседания</span><span class="exercise-reps">4 × 12-20</span></li>
+        <li><span class="exercise-name">Выпады на месте</span><span class="exercise-reps">3 × 10-15</span></li>
+        <li><span class="exercise-name">Болгарские выпады</span><span class="exercise-reps">3 × 8-12</span></li>
+        <li><span class="exercise-name">Приседания на одной ноге</span><span class="exercise-reps">3 × 4-8</span></li>
+        <li><span class="exercise-name">Подъём на носки</span><span class="exercise-reps">4 × 15-25</span></li>
+        <li><span class="exercise-name">Прыжки из приседа</span><span class="exercise-reps">3 × 8-12</span></li>
+      </ul>
+    </div>
+
+    <!-- PULL -->
+    <div class="exercise-card">
+      <div class="exercise-card-header">
+        <div class="exercise-card-icon icon-pull">🏋️</div>
+        <div>
+          <div class="exercise-card-title">PULL — Тяговая</div>
+          <div class="exercise-card-subtitle">Четверг</div>
+        </div>
+      </div>
+      <ul class="exercise-list">
+        <li><span class="exercise-name">Подтягивания</span><span class="exercise-reps">4 × 4-10</span></li>
+        <li><span class="exercise-name">Австралийские подтягивания</span><span class="exercise-reps">3 × 8-15</span></li>
+        <li><span class="exercise-name">Подтягивания узким хватом</span><span class="exercise-reps">3 × 4-8</span></li>
+        <li><span class="exercise-name">Негативные подтягивания</span><span class="exercise-reps">3 × 4-6</span></li>
+        <li><span class="exercise-name">Удержание в висе</span><span class="exercise-reps">3 × 20-30с</span></li>
+        <li><span class="exercise-name">Лопаточные подтягивания</span><span class="exercise-reps">3 × 8-12</span></li>
+      </ul>
+    </div>
+
+    <!-- CORE -->
+    <div class="exercise-card">
+      <div class="exercise-card-header">
+        <div class="exercise-card-icon icon-core">🔥</div>
+        <div>
+          <div class="exercise-card-title">CORE — Кор и Кардио</div>
+          <div class="exercise-card-subtitle">Пятница</div>
+        </div>
+      </div>
+      <ul class="exercise-list">
+        <li><span class="exercise-name">Планка</span><span class="exercise-reps">3 × 30-60с</span></li>
+        <li><span class="exercise-name">Скручивания</span><span class="exercise-reps">3 × 15-25</span></li>
+        <li><span class="exercise-name">Подъём ног в висе</span><span class="exercise-reps">3 × 8-15</span></li>
+        <li><span class="exercise-name">Велосипед</span><span class="exercise-reps">3 × 15-20</span></li>
+        <li><span class="exercise-name">Берпи</span><span class="exercise-reps">3 × 8-12</span></li>
+        <li><span class="exercise-name">Скалолаз</span><span class="exercise-reps">3 × 20-30</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PRINCIPLES -->
+  <h2 class="section-title" style="margin-bottom: 3mm;">Принципы <span>тренировок</span></h2>
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-icon">📅</div>
+      <div class="principle-title">Чёткий график</div>
+      <div class="principle-desc">4 дня силовых,<br>3 дня восстановления</div>
+    </div>
+    <div class="principle">
+      <div class="principle-icon">📈</div>
+      <div class="principle-title">Прогрессия</div>
+      <div class="principle-desc">Уровни сложности<br>в каждом упражнении</div>
+    </div>
+    <div class="principle">
+      <div class="principle-icon">🏠</div>
+      <div class="principle-title">Без оборудования</div>
+      <div class="principle-desc">Только турник и брусья<br>на продвинутом уровне</div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <div class="cta-title">Готов начать <span style="background: linear-gradient(135deg, var(--orange), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">трансформацию</span>?</div>
+    <p class="cta-desc">
+      Получи индивидуальную программу тренировок с видеоматериалами,<br>
+      разбором техники и персональной поддержкой тренера.
+    </p>
+    <span class="cta-button">ПОЛУЧИТЬ ПРОГРАММУ ТРЕНИРОВОК</span>
+    <div class="cta-contacts">
+      caliathletics.ru &nbsp;•&nbsp; Telegram &nbsp;•&nbsp; WhatsApp
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="footer-brand">CALIATHLETICS</span>
+    <span>Построй силу, которая с тобой навсегда</span>
+    <span>Страница 2 / 2</span>
+  </div>
+</div>
+
+</body>
+</html>

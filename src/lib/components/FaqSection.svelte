@@ -19,7 +19,7 @@
 				</h2>
 			</div>
 			<p class="max-w-sm text-muted-foreground">
-				Не нашли ответ? <a href="#contact" class="text-primary underline underline-offset-4 transition-colors hover:text-brand-gold">Напишите нам</a>
+				Не нашли ответ? <a href="https://t.me/vvb_CALIATHLETICS_bot" target="_blank" rel="noopener noreferrer" class="text-primary underline underline-offset-4 transition-colors hover:text-brand-gold">Напишите нам</a>
 			</p>
 		</div>
 
