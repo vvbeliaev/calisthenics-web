@@ -30,10 +30,8 @@
 
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
 		<!-- Logo -->
-		<a href="/" class="group flex items-center gap-3">
-			<div class="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-[0_0_15px_rgba(255,132,0,0.2)]">
-				<span class="font-display text-lg text-primary">C</span>
-			</div>
+		<a href="/" class="group flex items-center gap-2">
+			<img src="/icon-192.png" alt="Caliathletics" class="h-10 w-10 rounded-lg transition-all duration-300 group-hover:shadow-[0_0_15px_rgba(255,132,0,0.3)]" />
 			<span class="hidden font-display text-xl tracking-[0.25em] text-foreground sm:inline">
 				CALIATHLETICS
 			</span>
@@ -78,8 +76,11 @@
 			</Sheet.Trigger>
 			<Sheet.Content side="right" class="w-80 bg-background/95 backdrop-blur-xl border-border/30">
 				<Sheet.Header>
-					<Sheet.Title class="font-display text-2xl tracking-wider bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent">
-						CALIATHLETICS
+					<Sheet.Title class="flex items-center gap-2">
+						<img src="/icon-192.png" alt="Caliathletics" class="h-8 w-8 rounded-lg" />
+						<span class="font-display text-2xl tracking-wider bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent">
+							CALIATHLETICS
+						</span>
 					</Sheet.Title>
 				</Sheet.Header>
 				<nav class="mt-8 flex flex-col gap-1 px-2">
