@@ -18,6 +18,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.0.8",
     "bits-ui": "^2.16.3",
+    "sharp": "^0.34.5",
     "svelte": "^5.54.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3"

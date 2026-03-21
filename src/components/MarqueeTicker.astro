@@ -1,0 +1,25 @@
+---
+const words = ["МОТИВАЦИЯ", "ДИСЦИПЛИНА", "СИЛА", "РЕЗУЛЬТАТ", "ПРОГРЕСС", "СВОБОДА", "МОТИВАЦИЯ", "ДИСЦИПЛИНА", "СИЛА", "РЕЗУЛЬТАТ", "ПРОГРЕСС", "СВОБОДА"];
+---
+
+<div class="relative overflow-hidden border-y border-primary/20 bg-primary/5 py-4">
+	<div class="marquee-track flex whitespace-nowrap">
+		{[...words, ...words].map((word) => (
+			<span class="mx-8 inline-flex items-center gap-4 font-display text-lg tracking-[0.2em] text-primary/80 sm:text-xl">
+				{word}
+				<span class="inline-block h-2 w-2 rotate-45 bg-brand-gold"></span>
+			</span>
+		))}
+	</div>
+</div>
+
+<style>
+	.marquee-track {
+		animation: marquee 30s linear infinite;
+		width: max-content;
+	}
+	@keyframes marquee {
+		0% { transform: translateX(0); }
+		100% { transform: translateX(-50%); }
+	}
+</style>
