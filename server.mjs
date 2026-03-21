@@ -10,11 +10,27 @@ const PORT = process.env.PORT || 4321;
 const HOST = process.env.HOST || "0.0.0.0";
 
 const clientDir = join(__dirname, "dist", "client");
-const serveStatic = sirv(clientDir, { maxAge: 31536000, immutable: true });
+
+// Hashed assets (_astro/*) — long cache, immutable
+const serveAssets = sirv(join(clientDir, "_astro"), {
+  maxAge: 31536000,
+  immutable: true,
+});
+
+// Root static files (favicon.ico, icons, video, pdf) — short cache
+const servePublic = sirv(clientDir, {
+  maxAge: 3600,
+});
 
 const server = http.createServer((req, res) => {
-  // Try static files first, fall through to Astro handler
-  serveStatic(req, res, () => {
+  // Hashed assets first
+  if (req.url?.startsWith("/_astro/")) {
+    serveAssets(req, res, () => astroHandler(req, res));
+    return;
+  }
+
+  // Other static files (favicon, images, etc.)
+  servePublic(req, res, () => {
     astroHandler(req, res);
   });
 });
