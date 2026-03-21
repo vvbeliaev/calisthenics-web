@@ -28,7 +28,7 @@
 	<!-- Top accent line -->
 	<div class="h-[2px] bg-linear-to-r from-transparent via-brand-orange to-transparent opacity-60"></div>
 
-	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+	<div class="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4">
 		<!-- Logo -->
 		<a href="/" class="group flex items-center gap-2">
 			<img src="/icon-192.png" alt="Caliathletics" class="h-10 w-10 rounded-lg transition-all duration-300 group-hover:shadow-[0_0_15px_rgba(255,132,0,0.3)]" />

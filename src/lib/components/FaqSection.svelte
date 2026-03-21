@@ -6,12 +6,12 @@
 <section id="faq" class="relative overflow-hidden py-24 sm:py-32">
 	<div class="absolute top-0 left-0 w-[500px] h-[500px] rounded-full bg-primary/3 blur-3xl"></div>
 
-	<div class="relative mx-auto max-w-4xl px-6">
+	<div class="relative mx-auto max-w-5xl px-6">
 		<!-- Section header — left-aligned -->
 		<div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
 			<div>
 				<span class="text-sm font-medium uppercase tracking-widest text-primary">FAQ</span>
-				<h2 class="mt-4 font-display text-4xl tracking-wide sm:text-5xl md:text-6xl">
+				<h2 class="mt-4 font-display text-4xl tracking-wide sm:text-5xl md:text-6xl 2xl:text-7xl">
 					ЧАСТЫЕ
 					<span class="bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent">
 						ВОПРОСЫ

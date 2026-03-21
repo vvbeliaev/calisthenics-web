@@ -11,18 +11,18 @@
     class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl"
   ></div>
 
-  <div class="relative mx-auto max-w-4xl px-6 text-center">
+  <div class="relative mx-auto max-w-5xl px-6 text-center">
     <!-- Header -->
     <span class="text-sm font-medium uppercase tracking-widest text-primary"
       >Мой подарок тебе</span
     >
     <h2
-      class="mt-4 font-display text-4xl tracking-wide sm:text-5xl md:text-6xl"
+      class="mt-4 font-display text-4xl tracking-wide sm:text-5xl md:text-6xl 2xl:text-7xl"
     >
       {leadForm.title.toUpperCase()}
     </h2>
     <p
-      class="mt-2 font-display text-3xl tracking-wide sm:text-4xl bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent"
+      class="mt-2 font-display text-3xl tracking-wide sm:text-4xl 2xl:text-5xl bg-linear-to-r from-brand-orange to-brand-gold bg-clip-text text-transparent"
     >
       {leadForm.titleAccent.toUpperCase()}
     </p>
