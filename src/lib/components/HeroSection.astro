@@ -8,14 +8,11 @@ import { hero } from "../../data/content";
 	<!-- Video Background with parallax wrapper -->
 	<div class="parallax-bg absolute inset-0">
 		<video
-			autoplay
+			id="hero-video"
 			muted
-			loop
 			playsinline
-			class="absolute inset-0 h-[120%] w-full object-cover"
-		>
-			<source src="/video/hero-video.mp4" type="video/mp4" />
-		</video>
+			class="absolute inset-0 h-[120%] w-full object-cover transition-opacity duration-500"
+		></video>
 		<!-- Fallback poster image -->
 		<Image
 			src={heroBg}
@@ -33,6 +30,19 @@ import { hero } from "../../data/content";
 	<div class="absolute inset-0 bg-linear-to-r from-background/80 via-background/40 to-transparent"></div>
 	<!-- Film grain texture -->
 	<div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 256 256%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E'); background-repeat: repeat; background-size: 128px;"></div>
+
+	<!-- Story progress bar (mobile only) -->
+	<div id="story-progress" class="absolute top-0 left-0 right-0 z-20 flex gap-1 px-4 pt-4 md:hidden">
+		<div class="story-bar h-[2px] flex-1 rounded-full bg-white/20">
+			<div class="story-bar-fill h-full rounded-full bg-primary transition-none" style="width: 0%"></div>
+		</div>
+		<div class="story-bar h-[2px] flex-1 rounded-full bg-white/20">
+			<div class="story-bar-fill h-full rounded-full bg-primary transition-none" style="width: 0%"></div>
+		</div>
+		<div class="story-bar h-[2px] flex-1 rounded-full bg-white/20">
+			<div class="story-bar-fill h-full rounded-full bg-primary transition-none" style="width: 0%"></div>
+		</div>
+	</div>
 
 	<!-- Content -->
 	<div class="relative z-10 mx-auto w-full max-w-7xl px-6 pt-32 pb-24">
@@ -106,15 +116,128 @@ import { hero } from "../../data/content";
 </section>
 
 <script>
-	// Simple parallax for hero background
+	const VIDEO_SOURCES = [
+		'/vkclips_20260321070458.mp4',
+		'/vkclips_20260321070557.mp4',
+		'/vkclips_20260321070819.mp4'
+	];
+
+	const video = document.getElementById('hero-video') as HTMLVideoElement;
+	const heroSection = document.getElementById('hero') as HTMLElement;
+	const progressBars = document.querySelectorAll('.story-bar-fill') as NodeListOf<HTMLElement>;
 	const parallaxBg = document.querySelector('.parallax-bg') as HTMLElement;
+
+	let currentIndex = 0;
+	let isVisible = true;
+	let isInViewport = true;
+
+	// --- Video loading & playback ---
+
+	function loadAndPlay(index: number) {
+		currentIndex = index;
+		video.src = VIDEO_SOURCES[index];
+		video.load();
+
+		const playPromise = video.play();
+		if (playPromise !== undefined) {
+			playPromise.catch(() => {
+				// Autoplay blocked — fallback image is already visible behind video
+				video.style.opacity = '0';
+			});
+		}
+		video.style.opacity = '1';
+	}
+
+	function switchToNext() {
+		// Fade out
+		video.style.opacity = '0';
+
+		// After fade completes, swap src and fade in
+		setTimeout(() => {
+			const nextIndex = (currentIndex + 1) % VIDEO_SOURCES.length;
+			// Mark previous bar as complete
+			if (progressBars[currentIndex]) {
+				progressBars[currentIndex].style.width = '100%';
+			}
+			loadAndPlay(nextIndex);
+
+			// Reset future bars
+			for (let i = nextIndex; i < progressBars.length; i++) {
+				if (i !== nextIndex) {
+					progressBars[i].style.width = '0%';
+				}
+			}
+
+			// If we looped back to 0, reset all bars
+			if (nextIndex === 0) {
+				progressBars.forEach(bar => bar.style.width = '0%');
+			}
+		}, 500); // matches transition-opacity duration-500
+	}
+
+	// --- Event listeners ---
+
+	video.addEventListener('ended', switchToNext);
+
+	video.addEventListener('timeupdate', () => {
+		if (!video.duration || !isFinite(video.duration)) return;
+		const progress = (video.currentTime / video.duration) * 100;
+		if (progressBars[currentIndex]) {
+			progressBars[currentIndex].style.width = `${progress}%`;
+		}
+	});
+
+	video.addEventListener('error', () => {
+		// Skip to next video on error; if all fail, fallback image shows
+		const nextIndex = (currentIndex + 1) % VIDEO_SOURCES.length;
+		if (nextIndex !== 0) {
+			loadAndPlay(nextIndex);
+		} else {
+			// All videos failed — keep fallback image
+			video.style.opacity = '0';
+		}
+	});
+
+	// --- Visibility & intersection ---
+
+	function pauseIfHidden() {
+		if (!isVisible || !isInViewport) {
+			video.pause();
+		} else {
+			const playPromise = video.play();
+			if (playPromise !== undefined) {
+				playPromise.catch(() => {});
+			}
+		}
+	}
+
+	document.addEventListener('visibilitychange', () => {
+		isVisible = !document.hidden;
+		pauseIfHidden();
+	});
+
+	const observer = new IntersectionObserver(
+		(entries) => {
+			isInViewport = entries[0].isIntersecting;
+			pauseIfHidden();
+		},
+		{ threshold: 0.1 }
+	);
+	observer.observe(heroSection);
+
+	// --- Parallax ---
+
 	if (parallaxBg) {
 		window.addEventListener('scroll', () => {
 			const scrollY = window.scrollY;
-			const heroHeight = (parallaxBg.parentElement as HTMLElement).offsetHeight;
+			const heroHeight = heroSection.offsetHeight;
 			if (scrollY < heroHeight) {
 				parallaxBg.style.transform = `translateY(${scrollY * 0.3}px)`;
 			}
 		}, { passive: true });
 	}
+
+	// --- Init ---
+
+	loadAndPlay(0);
 </script>
