@@ -3,18 +3,18 @@ import { Image } from "astro:assets";
 import programDashboard from "../assets/images/program-dashboard.webp";
 import { program } from "../data/content";
 
-const scheduleStyles: Record<string, { color: string; bg: string }> = {
-	PUSH: { color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20" },
-	LEGS: { color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
-	REST: { color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
-	PULL: { color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
-	CORE: { color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/20" },
+const scheduleStyles: Record<string, { color: string; bg: string; dot: string }> = {
+	PUSH: { color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20", dot: "bg-orange-400" },
+	LEGS: { color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20", dot: "bg-amber-400" },
+	REST: { color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20", dot: "bg-emerald-400" },
+	PULL: { color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20", dot: "bg-sky-400" },
+	CORE: { color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/20", dot: "bg-rose-400" },
 };
 ---
 
 <section id="program" class="relative overflow-hidden py-24 sm:py-32">
 	<!-- Background -->
-	<div class="absolute inset-0 bg-linear-to-b from-background via-card/30 to-background"></div>
+	<div class="absolute inset-0 bg-linear-to-b from-background via-card/20 to-background"></div>
 
 	<div class="relative mx-auto max-w-7xl px-6">
 		<!-- Section header -->
@@ -32,19 +32,22 @@ const scheduleStyles: Record<string, { color: string; bg: string }> = {
 		</div>
 
 		<!-- Two-column layout -->
-		<div class="mt-16 grid items-center gap-12 lg:grid-cols-2">
-			<!-- Schedule cards -->
+		<div class="mt-16 grid items-start gap-12 lg:grid-cols-2">
+			<!-- Schedule cards — aligned with grid columns -->
 			<div class="space-y-3">
 				{program.schedule.map((item) => {
 					const style = scheduleStyles[item.type] || scheduleStyles.REST;
 					return (
-						<div class={`group flex items-center gap-4 rounded-xl border p-4 transition-all duration-300 hover:scale-[1.02] ${style.bg}`}>
-							<div class="shrink-0">
+						<div class={`group grid grid-cols-[7rem_auto_1fr] items-center gap-4 rounded-xl border p-4 transition-all duration-300 hover:scale-[1.02] ${style.bg}`}>
+							<!-- Day column — fixed width for alignment -->
+							<div class="min-w-0">
 								<span class="text-xs uppercase tracking-wider text-muted-foreground">{item.day}</span>
 								<div class={`font-display text-2xl tracking-wide ${style.color}`}>{item.type}</div>
 							</div>
-							<div class="h-10 w-px bg-border/50"></div>
-							<div>
+							<!-- Divider -->
+							<div class="h-10 w-px bg-border/40"></div>
+							<!-- Description -->
+							<div class="min-w-0">
 								<span class="font-semibold text-foreground">{item.label}</span>
 								<p class="text-sm text-muted-foreground">{item.muscles}</p>
 							</div>
@@ -64,7 +67,7 @@ const scheduleStyles: Record<string, { color: string; bg: string }> = {
 						sizes="(max-width: 1024px) 100vw, 50vw"
 					/>
 				</div>
-				<!-- Description card overlay -->
+				<!-- Description card -->
 				<div class="mt-6 rounded-2xl border border-border/30 bg-card/80 p-6 backdrop-blur-sm">
 					<p class="text-muted-foreground leading-relaxed">
 						{program.description}

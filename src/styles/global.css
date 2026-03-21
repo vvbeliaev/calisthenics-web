@@ -236,6 +236,17 @@
 .reveal-delay-3 { transition-delay: 0.3s; }
 .reveal-delay-4 { transition-delay: 0.4s; }
 
+/* Parallax background container */
+.parallax-bg {
+	will-change: transform;
+}
+
+/* Section divider with gradient */
+.section-divider {
+	height: 1px;
+	background: linear-gradient(90deg, transparent, oklch(0.72 0.19 55 / 30%), transparent);
+}
+
 @utility no-scrollbar {
 	-ms-overflow-style: none;
 	scrollbar-width: none;
