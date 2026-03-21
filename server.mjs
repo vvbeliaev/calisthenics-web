@@ -1,10 +1,23 @@
 import http from "node:http";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import sirv from "sirv";
 import { handler as astroHandler } from "./dist/server/entry.mjs";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PORT = process.env.PORT || 4321;
 const HOST = process.env.HOST || "0.0.0.0";
 
-const server = http.createServer(astroHandler);
+const clientDir = join(__dirname, "dist", "client");
+const serveStatic = sirv(clientDir, { maxAge: 31536000, immutable: true });
+
+const server = http.createServer((req, res) => {
+  // Try static files first, fall through to Astro handler
+  serveStatic(req, res, () => {
+    astroHandler(req, res);
+  });
+});
 
 server.listen(PORT, HOST, async () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
