@@ -56,8 +56,9 @@ bot/
 │   └── channels.py          # invite links, kick/unban
 ├── db/
 │   ├── __init__.py
-│   ├── init.py              # CREATE TABLE IF NOT EXISTS
-│   └── repo.py              # CRUD: products, subscriptions
+│   ├── init.py              # CREATE TABLE IF NOT EXISTS (products, users, subscriptions)
+│   ├── seeds.py             # начальные данные о продуктах
+│   └── repo.py              # CRUD: products, users, subscriptions
 ├── webhooks/
 │   ├── __init__.py
 │   └── prodamus.py          # POST /payment/webhook, GET /payment/success
@@ -88,6 +89,20 @@ CREATE TABLE IF NOT EXISTS products (
 
 Продукты определяются в `db/seeds.py` как список Python-словарей и вставляются функцией `seed_products()` при запуске (только если таблица пуста). Для добавления нового канала — добавить запись в `seeds.py` и перезапустить.
 
+### Таблица `users`
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+    telegram_id   INTEGER PRIMARY KEY,
+    username      TEXT,
+    first_name    TEXT,
+    first_seen    TEXT NOT NULL,   -- ISO datetime UTC
+    last_seen     TEXT NOT NULL
+);
+```
+
+Upsert при каждом `/start`. Даёт общий счётчик лидов для воронки.
+
 ### Таблица `subscriptions`
 
 ```sql
@@ -95,13 +110,30 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     telegram_id   INTEGER NOT NULL,
     product_id    TEXT NOT NULL REFERENCES products(product_id),
-    active_until  TEXT NOT NULL,   -- ISO datetime UTC
+    active_until  TEXT,            -- NULL пока status='pending'
     order_id      TEXT,            -- из Prodamus
-    status        TEXT NOT NULL DEFAULT 'active',  -- active | expired | cancelled
+    status        TEXT NOT NULL DEFAULT 'pending',  -- pending | active | expired | cancelled
     created_at    TEXT NOT NULL,
     updated_at    TEXT NOT NULL,
     UNIQUE(telegram_id, product_id)
 );
+```
+
+**Жизненный цикл статуса:**
+- `pending` — создаётся когда пользователь нажимает "Купить" (клик по inline-кнопке продукта)
+- `active` — переходит при успешном webhook от Prodamus, `active_until` заполняется
+- `expired` — APScheduler переводит когда `active_until < now()`
+- `cancelled` — Prodamus прислал webhook с неудачным платежом
+
+**Воронка из одного запроса:**
+```sql
+SELECT
+    (SELECT COUNT(*) FROM users)                                        AS total_leads,
+    COUNT(CASE WHEN status = 'pending'   THEN 1 END)                   AS in_checkout,
+    COUNT(CASE WHEN status = 'active'    THEN 1 END)                   AS paying,
+    COUNT(CASE WHEN status = 'expired'   THEN 1 END)                   AS churned,
+    COUNT(CASE WHEN status = 'cancelled' THEN 1 END)                   AS payment_failed
+FROM subscriptions;
 ```
 
 ---
@@ -111,14 +143,17 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 ```
 /start
   └─→ handlers/client.py::cmd_start()
-        └─→ db/repo.py::get_active_subscriptions(tg_id)
-        └─→ Показать каталог: название, цена, статус (активна / не куплена)
-              [кнопка "Купить" per product]
-              [кнопка "Моя подписка" для активных]
+        └─→ db/repo.py::upsert_user(tg_id, username, first_name)   # фиксируем лид
+        └─→ db/repo.py::get_subscriptions(tg_id)                   # все статусы
+        └─→ Показать каталог: название, цена, статус (активна / в оформлении / не куплена)
+              [кнопка "Купить" для новых]
+              [кнопка "Получить ссылку снова" для active]
+              [кнопка "Оформить снова" для expired/cancelled]
 
 callback "buy:{product_id}"
   └─→ handlers/client.py::cb_buy()
         └─→ db/repo.py::get_product(product_id)
+        └─→ db/repo.py::upsert_subscription(tg_id, product_id, status="pending")  # фиксируем интерес
         └─→ services/subscriptions.py::build_payment_url(tg_id, product)
               order_id = f"tg_{tg_id}_{product_id}_{timestamp}"
               url_notification = f"{WEBHOOK_BASE_URL}/payment/webhook?tg_id={tg_id}&product_id={product_id}"
