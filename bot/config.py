@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     TELEGRAM_TOKEN: str
     ADMIN_ID: int
-    WEBHOOK_BASE_URL: str
+    WEBHOOK_BASE_URL: str = ""   # если пусто — polling режим
     PRODAMUS_SECRET: str
     DB_PATH: str = "subscribers.db"
 
