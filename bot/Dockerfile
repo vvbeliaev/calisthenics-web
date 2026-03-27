@@ -1,0 +1,19 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# uv для быстрой установки зависимостей
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+COPY pyproject.toml .
+RUN uv sync --no-dev
+
+COPY . .
+
+# SQLite-файл монтируется снаружи через volume
+VOLUME ["/data"]
+ENV DB_PATH=/data/subscribers.db
+
+EXPOSE 8000
+
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
