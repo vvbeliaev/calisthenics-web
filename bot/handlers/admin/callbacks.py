@@ -15,6 +15,7 @@ from db import repo
 from handlers.admin.keyboards import (
     PAGE_SIZE,
     admin_list_kb,
+    expiring_kb,
     format_list_page,
     format_user_card,
     payment_notification_kb,
@@ -33,7 +34,9 @@ def register_admin_callbacks(dp: Dispatcher) -> None:
     dp.callback_query.register(cb_apay_revoke,         F.data.startswith("apay_revoke:"))
     dp.callback_query.register(cb_afind_grant,         F.data.startswith("afind_grant:"))
     dp.callback_query.register(cb_afind_revoke,        F.data.startswith("afind_revoke:"))
+    dp.callback_query.register(cb_alist_user,          F.data.startswith("alist_user:"))
     dp.callback_query.register(cb_alist,               F.data.startswith("alist:"))
+    dp.callback_query.register(cb_aexp_find,           F.data.startswith("aexp_find:"))
 
 
 # ── payment notification ───────────────────────────────────────────────────────
@@ -179,6 +182,31 @@ async def _refresh_user_card(call: CallbackQuery, tg_id: int) -> None:
     await call.answer("Готово")
 
 
+# ── user card open callbacks (/admin_list row click, /admin_expiring find) ────
+
+async def _send_user_card(call: CallbackQuery, tg_id: int) -> None:
+    """Fetch user data and send a new user card message."""
+    user = await repo.find_user(settings.DB_PATH, str(tg_id))
+    if not user:
+        await call.answer("Пользователь не найден", show_alert=True)
+        return
+    all_products = await repo.get_all_products(settings.DB_PATH)
+    text = format_user_card(user)
+    kb = user_card_kb(tg_id, user["subscriptions"], all_products)
+    await call.message.answer(text, parse_mode="HTML", reply_markup=kb)
+    await call.answer()
+
+
+async def cb_alist_user(call: CallbackQuery) -> None:
+    tg_id = int(call.data.split(":", 1)[1])
+    await _send_user_card(call, tg_id)
+
+
+async def cb_aexp_find(call: CallbackQuery) -> None:
+    tg_id = int(call.data.split(":", 1)[1])
+    await _send_user_card(call, tg_id)
+
+
 # ── pagination callback (/admin_list) ─────────────────────────────────────────
 
 async def cb_alist(call: CallbackQuery) -> None:
@@ -190,6 +218,6 @@ async def cb_alist(call: CallbackQuery) -> None:
         await call.answer("Нет данных", show_alert=True)
         return
     text = format_list_page(page, offset=offset, total=total)
-    kb = admin_list_kb(offset=offset, total=total)
+    kb = admin_list_kb(offset=offset, total=total, page=page)
     await call.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
     await call.answer()

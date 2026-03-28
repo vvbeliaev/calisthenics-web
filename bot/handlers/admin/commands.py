@@ -17,6 +17,7 @@ from db import repo
 from handlers.admin.keyboards import (
     PAGE_SIZE,
     admin_list_kb,
+    expiring_kb,
     format_list_page,
     format_user_card,
     user_card_kb,
@@ -110,7 +111,7 @@ async def admin_list(msg: Message) -> None:
     total = len(subs)
     page = subs[:PAGE_SIZE]
     text = format_list_page(page, offset=0, total=total)
-    kb = admin_list_kb(offset=0, total=total)
+    kb = admin_list_kb(offset=0, total=total, page=page)
     await msg.answer(text, parse_mode="HTML", reply_markup=kb)
 
 
@@ -190,4 +191,4 @@ async def admin_expiring(msg: Message) -> None:
         until = s["active_until"][:10] if s.get("active_until") else "—"
         user_part = f"@{s['username']}" if s.get("username") else f"ID:{s['telegram_id']}"
         lines.append(f"• {user_part} — {s['product_name']} — до {until}")
-    await msg.answer("\n".join(lines), parse_mode="HTML")
+    await msg.answer("\n".join(lines), parse_mode="HTML", reply_markup=expiring_kb(subs))

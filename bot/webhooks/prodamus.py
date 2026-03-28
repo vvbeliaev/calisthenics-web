@@ -16,13 +16,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/payment")
 
 
+def _parse_order_num(order_num: str) -> tuple[int, str] | tuple[None, None]:
+    """Извлекает tg_id и product_id из order_num вида tg_{tg_id}_{product_id}_{ts}."""
+    parts = order_num.split("_", 3)
+    if len(parts) >= 3 and parts[0] == "tg":
+        try:
+            return int(parts[1]), parts[2]
+        except ValueError:
+            pass
+    return None, None
+
+
 @router.post("/webhook")
-async def payment_webhook(
-    request: Request,
-    tg_id: int,
-    product_id: str,
-) -> PlainTextResponse:
-    """Prodamus шлёт POST после каждого платежа (успешного и нет)."""
+async def payment_webhook(request: Request) -> PlainTextResponse:
+    """Prodamus шлёт POST после каждого платежа (успешного и нет).
+
+    tg_id и product_id вытаскиваются из order_num (формат: tg_{tg_id}_{product_id}_{ts}).
+    Это позволяет использовать статический URL вебхука в настройках Prodamus.
+    """
     bot: Bot = request.app.state.bot
     db_path: str = request.app.state.db_path
     secret: str = request.app.state.prodamus_secret
@@ -32,16 +43,25 @@ async def payment_webhook(
 
     incoming_sign = request.headers.get("Sign", "")
     if not verify_signature(post_data, secret, incoming_sign):
-        logger.warning("Invalid Prodamus signature from %s", request.client.host)
+        logger.warning(
+            "Invalid Prodamus signature from %s, data=%s",
+            request.client.host,
+            {k: v for k, v in post_data.items() if k != "Sign"},
+        )
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     payment_status = post_data.get("payment_status", "")
-    order_id = post_data.get("order_id", "")
-    amount = post_data.get("payment_amount", "?")
+    order_num = post_data.get("order_num", "") or post_data.get("order_id", "")
+    amount = post_data.get("sum", "?")
+
+    tg_id, product_id = _parse_order_num(order_num)
+    if tg_id is None:
+        logger.error("Cannot parse tg_id/product_id from order_num=%r", order_num)
+        return PlainTextResponse("ok")
 
     logger.info(
         "Prodamus webhook: tg_id=%s product=%s status=%s order=%s",
-        tg_id, product_id, payment_status, order_id,
+        tg_id, product_id, payment_status, order_num,
     )
 
     # Неудачный платёж — кикаем и уведомляем

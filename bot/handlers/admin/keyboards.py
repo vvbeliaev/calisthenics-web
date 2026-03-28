@@ -68,39 +68,67 @@ def user_card_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def admin_list_kb(offset: int, total: int, page_size: int = PAGE_SIZE) -> InlineKeyboardMarkup:
-    """Prev / Next navigation for paginated /admin_list.
+def admin_list_kb(
+    offset: int,
+    total: int,
+    page: list[dict],
+    page_size: int = PAGE_SIZE,
+) -> InlineKeyboardMarkup:
+    """User row buttons + Prev/Next navigation for /admin_list.
 
-    Only renders buttons that make sense (no Back on first page, no Forward past end).
+    Each user row is a clickable button that opens the user card.
+    Navigation shows page numbers instead of raw offsets.
     """
-    row = []
+    rows = []
+
+    for s in page:
+        until = s["active_until"][:10] if s.get("active_until") else "—"
+        label = f"@{s['username']}" if s.get("username") else f"ID:{s['telegram_id']}"
+        rows.append([InlineKeyboardButton(
+            text=f"{label} · {s['product_id']} · до {until}",
+            callback_data=f"alist_user:{s['telegram_id']}",
+        )])
+
+    nav = []
     if offset > 0:
         prev_offset = max(0, offset - page_size)
-        row.append(InlineKeyboardButton(
-            text=f"← {prev_offset}–{offset - 1}",
+        prev_page = prev_offset // page_size + 1
+        nav.append(InlineKeyboardButton(
+            text=f"← Стр. {prev_page}",
             callback_data=f"alist:{prev_offset}",
         ))
     next_offset = offset + page_size
     if next_offset < total:
-        end = min(next_offset + page_size - 1, total - 1)
-        row.append(InlineKeyboardButton(
-            text=f"→ {next_offset}–{end}",
+        next_page = next_offset // page_size + 1
+        nav.append(InlineKeyboardButton(
+            text=f"→ Стр. {next_page}",
             callback_data=f"alist:{next_offset}",
         ))
-    return InlineKeyboardMarkup(inline_keyboard=[row] if row else [])
+    if nav:
+        rows.append(nav)
+
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def expiring_kb(subs: list[dict]) -> InlineKeyboardMarkup | None:
+    """One 'Find' button per user in /admin_expiring output."""
+    rows = []
+    for s in subs:
+        label = f"@{s['username']}" if s.get("username") else f"ID:{s['telegram_id']}"
+        rows.append([InlineKeyboardButton(
+            text=f"🔍 {label}",
+            callback_data=f"aexp_find:{s['telegram_id']}",
+        )])
+    return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
 
 
 # ── text formatters ────────────────────────────────────────────────────────────
 
 def format_list_page(subs: list[dict], offset: int, total: int) -> str:
-    """Render one page of /admin_list as HTML text."""
+    """Render /admin_list header. User rows are rendered as keyboard buttons."""
     page_num = offset // PAGE_SIZE + 1
-    lines = [f"<b>Активные подписки ({total}), стр. {page_num}:</b>\n"]
-    for s in subs:
-        until = s["active_until"][:10] if s.get("active_until") else "—"
-        name_part = f"@{s['username']}" if s.get("username") else f"id:{s['telegram_id']}"
-        lines.append(f"• {name_part} | {s['product_id']} | до {until}")
-    return "\n".join(lines)
+    total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
+    return f"<b>Активные подписки ({total}), стр. {page_num}/{total_pages}:</b>"
 
 
 def format_user_card(user: dict) -> str:
