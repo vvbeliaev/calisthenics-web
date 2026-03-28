@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 
 def register_admin_callbacks(dp: Dispatcher) -> None:
     dp.callback_query.register(cb_apay_grant,          F.data.startswith("apay_grant:"))
-    dp.callback_query.register(cb_apay_revoke,         F.data.startswith("apay_revoke:"))
     dp.callback_query.register(cb_apay_revoke_confirm, F.data.startswith("apay_revoke_confirm:"))
     dp.callback_query.register(cb_apay_revoke_cancel,  F.data.startswith("apay_revoke_cancel:"))
+    dp.callback_query.register(cb_apay_revoke,         F.data.startswith("apay_revoke:"))
     dp.callback_query.register(cb_afind_grant,         F.data.startswith("afind_grant:"))
     dp.callback_query.register(cb_afind_revoke,        F.data.startswith("afind_revoke:"))
     dp.callback_query.register(cb_alist,               F.data.startswith("alist:"))
@@ -69,7 +69,17 @@ async def cb_apay_grant(call: CallbackQuery, bot: Bot) -> None:
         await call.answer("Продукт не найден", show_alert=True)
         return
     await repo.activate_subscription(tg_id, product_id, order_id="manual", db_path=settings.DB_PATH)
-    await channels.grant_access(bot, tg_id, product)
+    channel_link, discussion_link = await channels.grant_access(bot, tg_id, product)
+    try:
+        await bot.send_message(
+            tg_id,
+            f"✅ <b>Доступ к «{product['name']}» открыт!</b>\n\n"
+            f"Канал: {channel_link}\nБеседа: {discussion_link}\n\n"
+            "<i>Ссылки одноразовые, действуют 7 дней.</i>",
+            parse_mode="HTML",
+        )
+    except Exception as e:
+        logger.warning("Не удалось уведомить пользователя %s: %s", tg_id, e)
     ts = datetime.now().strftime("%d.%m.%Y %H:%M")
     await call.message.edit_text(
         call.message.html_text + f"\n\n✅ Доступ выдан вручную {ts}",
