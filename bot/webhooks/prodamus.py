@@ -89,7 +89,7 @@ async def payment_webhook(request: Request) -> PlainTextResponse:
         logger.error("Product not found: %s", product_id)
         return PlainTextResponse("ok")
 
-    await repo.activate_subscription(tg_id, product_id, order_id, db_path)
+    await repo.activate_subscription(tg_id, product_id, order_num, db_path)
 
     try:
         channel_link, discussion_link = await channels.grant_access(bot, tg_id, product)
@@ -107,7 +107,7 @@ async def payment_webhook(request: Request) -> PlainTextResponse:
         logger.error("grant_access / notify user failed: %s", e)
 
     try:
-        await notify_admin(bot, tg_id, product, amount, order_id)
+        await notify_admin(bot, tg_id, product, amount, order_num)
     except Exception as e:
         logger.error("notify_admin failed: %s", e)
 

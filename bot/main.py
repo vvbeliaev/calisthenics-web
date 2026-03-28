@@ -83,9 +83,10 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(
         check_expired_subscriptions,
         trigger="interval",
-        hours=1,
+        minutes=5,
         args=[bot, settings.DB_PATH],
         id="check_expired",
+        misfire_grace_time=60,
     )
     scheduler.add_job(
         backup_database,

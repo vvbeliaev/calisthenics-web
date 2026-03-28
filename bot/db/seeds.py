@@ -6,21 +6,30 @@
 import aiosqlite
 
 PRODUCTS = [
+    # {
+    #     "product_id": "beginner",
+    #     "name": "Начинающий",
+    #     "description": "Базовая программа для новичков. 8 уровней, 28 упражнений.",
+    #     "channel_id": -1003475480396,  # ← заменить
+    #     "discussion_id": -1003847085264,  # ← заменить
+    #     "prodamus_url": "https://heartpath.payform.ru/",  # ← заменить
+    #     "price": 2500,
+    # },
+    # {
+    #     "product_id": "intermediate",
+    #     "name": "Промежуточный",
+    #     "description": "Для тех, кто освоил базу. 8 уровней, 28 упражнений.",
+    #     "channel_id": -1003802167188,  # ← заменить
+    #     "discussion_id": -5184619005,  # ← заменить
+    #     "prodamus_url": "https://heartpath.payform.ru/",  # ← заменить
+    #     "price": 2500,
+    # },
     {
-        "product_id": "beginner",
-        "name": "Начинающий",
-        "description": "Базовая программа для новичков. 8 уровней, 28 упражнений.",
-        "channel_id": -1003475480396,  # ← заменить
-        "discussion_id": -1003847085264,  # ← заменить
-        "prodamus_url": "https://heartpath.payform.ru/",  # ← заменить
-        "price": 2500,
-    },
-    {
-        "product_id": "intermediate",
-        "name": "Промежуточный",
-        "description": "Для тех, кто освоил базу. 8 уровней, 28 упражнений.",
-        "channel_id": -1003802167188,  # ← заменить
-        "discussion_id": -5184619005,  # ← заменить
+        "product_id": "base",
+        "name": "База",
+        "description": "Базовая программа для начинающих. 8 уровней, 28 упражнений.",
+        "channel_id": -1003797840314,  # ← заменить
+        "discussion_id": -1003829594565,  # ← заменить
         "prodamus_url": "https://heartpath.payform.ru/",  # ← заменить
         "price": 2500,
     },
