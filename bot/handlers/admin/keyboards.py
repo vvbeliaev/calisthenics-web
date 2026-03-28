@@ -119,7 +119,7 @@ def format_user_card(user: dict) -> str:
     if user.get("subscriptions"):
         for s in user["subscriptions"]:
             until = s["active_until"][:10] if s.get("active_until") else "—"
-            icon = "✅" if s["status"] == "active" else "⏳" if s["status"] == "pending" else "❌"
+            icon = "✅" if s["status"] == "active" else "❌"
             lines.append(f"  {icon} {s['name']} — {s['status']} до {until}")
     else:
         lines.append("  нет подписок")

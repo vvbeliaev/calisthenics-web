@@ -5,15 +5,13 @@ import aiosqlite
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
 
+
 def _now() -> str:
     return datetime.utcnow().isoformat()
 
 
-def _active_until(days: int = 30) -> str:
-    return (datetime.utcnow() + timedelta(days=days)).isoformat()
-
-
 # ─── users ───────────────────────────────────────────────────────────────────
+
 
 async def upsert_user(
     telegram_id: int,
@@ -23,18 +21,22 @@ async def upsert_user(
 ) -> None:
     now = _now()
     async with aiosqlite.connect(db_path) as db:
-        await db.execute("""
+        await db.execute(
+            """
             INSERT INTO users (telegram_id, username, first_name, first_seen, last_seen)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(telegram_id) DO UPDATE SET
                 username   = excluded.username,
                 first_name = excluded.first_name,
                 last_seen  = excluded.last_seen
-        """, (telegram_id, username, first_name, now, now))
+        """,
+            (telegram_id, username, first_name, now, now),
+        )
         await db.commit()
 
 
 # ─── products ────────────────────────────────────────────────────────────────
+
 
 async def get_all_products(db_path: str) -> list[dict]:
     async with aiosqlite.connect(db_path) as db:
@@ -55,6 +57,7 @@ async def get_product(product_id: str, db_path: str) -> dict | None:
 
 
 # ─── subscriptions ───────────────────────────────────────────────────────────
+
 
 async def get_subscriptions(telegram_id: int, db_path: str) -> list[dict]:
     async with aiosqlite.connect(db_path) as db:
@@ -89,7 +92,8 @@ async def upsert_subscription(
 ) -> None:
     now = _now()
     async with aiosqlite.connect(db_path) as db:
-        await db.execute("""
+        await db.execute(
+            """
             INSERT INTO subscriptions
                 (telegram_id, product_id, status, active_until, order_id, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -98,18 +102,34 @@ async def upsert_subscription(
                 active_until = COALESCE(excluded.active_until, active_until),
                 order_id     = COALESCE(excluded.order_id, order_id),
                 updated_at   = excluded.updated_at
-        """, (telegram_id, product_id, status, active_until, order_id, now, now))
+        """,
+            (telegram_id, product_id, status, active_until, order_id, now, now),
+        )
         await db.commit()
 
 
 async def activate_subscription(
-    telegram_id: int, product_id: str, order_id: str, db_path: str
+    telegram_id: int, product_id: str, order_id: str, db_path: str, days: int = 30
 ) -> None:
-    """Успешная оплата — ставим active + продлеваем на 30 дней."""
-    now = _now()
-    until = _active_until(30)
+    """Activate subscription, extending from MAX(existing active_until, now) + days."""
+    now = datetime.utcnow()
     async with aiosqlite.connect(db_path) as db:
-        await db.execute("""
+        async with db.execute(
+            "SELECT active_until FROM subscriptions WHERE telegram_id = ? AND product_id = ?",
+            (telegram_id, product_id),
+        ) as cur:
+            row = await cur.fetchone()
+        if row and row[0]:
+            try:
+                base = max(datetime.fromisoformat(row[0]), now)
+            except (ValueError, TypeError):
+                base = now
+        else:
+            base = now
+        until = (base + timedelta(days=days)).isoformat()
+        now_str = now.isoformat()
+        await db.execute(
+            """
             INSERT INTO subscriptions
                 (telegram_id, product_id, status, active_until, order_id, created_at, updated_at)
             VALUES (?, ?, 'active', ?, ?, ?, ?)
@@ -118,7 +138,9 @@ async def activate_subscription(
                 active_until = excluded.active_until,
                 order_id     = excluded.order_id,
                 updated_at   = excluded.updated_at
-        """, (telegram_id, product_id, until, order_id, now, now))
+        """,
+            (telegram_id, product_id, until, order_id, now_str, now_str),
+        )
         await db.commit()
 
 
@@ -126,10 +148,13 @@ async def set_subscription_status(
     telegram_id: int, product_id: str, status: str, db_path: str
 ) -> None:
     async with aiosqlite.connect(db_path) as db:
-        await db.execute("""
+        await db.execute(
+            """
             UPDATE subscriptions SET status = ?, updated_at = ?
             WHERE telegram_id = ? AND product_id = ?
-        """, (status, _now(), telegram_id, product_id))
+        """,
+            (status, _now(), telegram_id, product_id),
+        )
         await db.commit()
 
 
@@ -137,17 +162,20 @@ async def get_expired_active_subscriptions(db_path: str) -> list[dict]:
     """Активные подписки с истёкшим active_until — для APScheduler."""
     async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute("""
+        async with db.execute(
+            """
             SELECT s.*, p.channel_id, p.discussion_id, p.name AS product_name
             FROM subscriptions s
             JOIN products p USING (product_id)
             WHERE s.status = 'active' AND s.active_until < datetime('now')
-        """) as cur:
+        """
+        ) as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
 
 
 # ─── admin queries ────────────────────────────────────────────────────────────
+
 
 async def get_active_subscriptions(db_path: str) -> list[dict]:
     """Active subscriptions joined with user info, ordered by active_until.
@@ -156,13 +184,15 @@ async def get_active_subscriptions(db_path: str) -> list[dict]:
     """
     async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute("""
+        async with db.execute(
+            """
             SELECT s.*, u.username, u.first_name
             FROM subscriptions s
             LEFT JOIN users u USING (telegram_id)
             WHERE s.status = 'active'
             ORDER BY s.active_until
-        """) as cur:
+        """
+        ) as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
 
@@ -177,10 +207,6 @@ async def get_stats(db_path: str) -> dict:
         ) as cur:
             active: int = (await cur.fetchone())[0]
         async with db.execute(
-            "SELECT COUNT(*) FROM subscriptions WHERE status = 'pending'"
-        ) as cur:
-            pending: int = (await cur.fetchone())[0]
-        async with db.execute(
             "SELECT COUNT(*) FROM subscriptions WHERE status IN ('expired', 'cancelled')"
         ) as cur:
             expired_cancelled: int = (await cur.fetchone())[0]
@@ -192,7 +218,6 @@ async def get_stats(db_path: str) -> dict:
     return {
         "total_users": total_users,
         "active": active,
-        "pending": pending,
         "expired_cancelled": expired_cancelled,
         "expiring_7d": expiring_7d,
     }
@@ -202,7 +227,8 @@ async def get_expiring_subscriptions(db_path: str, days: int) -> list[dict]:
     """Active subscriptions expiring within `days` days, joined with user and product info."""
     async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute("""
+        async with db.execute(
+            """
             SELECT s.telegram_id, s.product_id, s.active_until,
                    u.username, u.first_name, p.name AS product_name
             FROM subscriptions s
@@ -211,7 +237,9 @@ async def get_expiring_subscriptions(db_path: str, days: int) -> list[dict]:
             WHERE s.status = 'active'
               AND s.active_until < datetime('now', '+' || ? || ' days')
             ORDER BY s.active_until
-        """, (str(days),)) as cur:
+        """,
+            (str(days),),
+        ) as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
 
@@ -238,12 +266,15 @@ async def find_user(db_path: str, query: str) -> dict | None:
         if row is None:
             return None
         user = dict(row)
-        async with db.execute("""
+        async with db.execute(
+            """
             SELECT s.product_id, s.status, s.active_until, p.name
             FROM subscriptions s
             LEFT JOIN products p USING (product_id)
             WHERE s.telegram_id = ?
-        """, (user["telegram_id"],)) as cur:
+        """,
+            (user["telegram_id"],),
+        ) as cur:
             subs = await cur.fetchall()
         user["subscriptions"] = [dict(s) for s in subs]
         return user

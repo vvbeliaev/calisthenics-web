@@ -77,13 +77,6 @@ async def cmd_start(msg: Message) -> None:
                 callback_data=f"test_grant:{p['product_id']}",
             )])
         else:
-            # Сразу генерируем URL и создаём pending для воронки
-            await repo.upsert_subscription(
-                telegram_id=msg.from_user.id,
-                product_id=p["product_id"],
-                status="pending",
-                db_path=settings.DB_PATH,
-            )
             pay_url = build_payment_url(
                 tg_id=msg.from_user.id,
                 product=p,

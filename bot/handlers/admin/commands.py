@@ -53,16 +53,17 @@ async def admin_grant(msg: Message, bot: Bot) -> None:
     if not _is_admin(msg):
         return
     parts = msg.text.split()
-    if len(parts) != 3:
-        await msg.answer("Использование: /admin_grant {tg_id} {product_id}")
+    if len(parts) < 3 or len(parts) > 4:
+        await msg.answer("Использование: /admin_grant {tg_id} {product_id} [days]")
         return
     tg_id = int(parts[1])
     product_id = parts[2]
+    days = int(parts[3]) if len(parts) == 4 and parts[3].isdigit() else 30
     product = await repo.get_product(product_id, settings.DB_PATH)
     if not product:
         await msg.answer(f"Продукт «{product_id}» не найден.")
         return
-    await repo.activate_subscription(tg_id, product_id, order_id="manual", db_path=settings.DB_PATH)
+    await repo.activate_subscription(tg_id, product_id, order_id="manual", db_path=settings.DB_PATH, days=days)
     channel_link, discussion_link = await channels.grant_access(bot, tg_id, product)
     try:
         await bot.send_message(
@@ -74,7 +75,7 @@ async def admin_grant(msg: Message, bot: Bot) -> None:
         )
     except Exception as e:
         logger.warning("Не удалось уведомить пользователя %s: %s", tg_id, e)
-    await msg.answer(f"✅ Доступ выдан: tg_id={tg_id} продукт={product_id}")
+    await msg.answer(f"✅ Доступ выдан: tg_id={tg_id} продукт={product_id} дней={days}")
 
 
 async def admin_revoke(msg: Message, bot: Bot) -> None:
@@ -144,7 +145,6 @@ async def admin_stats(msg: Message) -> None:
         "─────────────────────────\n"
         f"👥 Пользователей в боте:    {s['total_users']}\n"
         f"✅ Активных подписок:       {s['active']}\n"
-        f"⏳ Ожидают оплаты:          {s['pending']}\n"
         f"❌ Истекших / отменённых:   {s['expired_cancelled']}\n"
         "─────────────────────────\n"
         f"⚠️  Истекают за 7 дней:      {s['expiring_7d']}"

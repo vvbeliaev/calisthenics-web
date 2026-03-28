@@ -42,7 +42,6 @@ async def populated_db(db):
             [
                 (1, "base", "active",  _days(20), "ord1", _now(), _now()),  # alice, expires 20d
                 (2, "base", "active",  _days(5),  "ord2", _now(), _now()),  # bob,   expires 5d
-                (2, "adv",  "pending", None,       None,   _now(), _now()),  # bob,   pending
                 (3, "base", "expired", _days(-1), "ord3", _now(), _now()),  # charlie, expired
             ],
         )
@@ -67,7 +66,6 @@ async def test_get_stats(populated_db):
     s = await repo.get_stats(populated_db)
     assert s["total_users"] == 3
     assert s["active"] == 2
-    assert s["pending"] == 1
     assert s["expired_cancelled"] == 1
     assert s["expiring_7d"] == 1  # only bob (5 days)
 
@@ -102,9 +100,66 @@ async def test_find_user_by_tg_id(populated_db):
     user = await repo.find_user(populated_db, "2")
     assert user is not None
     assert user["username"] == "bob"
-    assert len(user["subscriptions"]) == 2
+    assert len(user["subscriptions"]) == 1
 
 
 async def test_find_user_not_found(populated_db):
     user = await repo.find_user(populated_db, "nonexistent")
     assert user is None
+
+
+# ── activate_subscription ─────────────────────────────────────────────────────
+
+async def test_activate_first_grant(db):
+    """No existing sub: active_until = now + days."""
+    await repo.activate_subscription(1, "base", "ord1", db, days=30)
+    sub = await repo.get_subscription(1, "base", db)
+    assert sub["status"] == "active"
+    until = datetime.fromisoformat(sub["active_until"])
+    expected = datetime.utcnow() + timedelta(days=30)
+    assert abs((until - expected).total_seconds()) < 5
+
+
+async def test_activate_extends_from_future_active_until(db):
+    """Renewal while still active: extends from active_until, not now."""
+    future = (datetime.utcnow() + timedelta(days=20)).isoformat()
+    async with aiosqlite.connect(db) as conn:
+        await conn.execute(
+            "INSERT INTO subscriptions "
+            "(telegram_id, product_id, status, active_until, order_id, created_at, updated_at) "
+            "VALUES (1,'base','active',?,NULL,datetime('now'),datetime('now'))",
+            (future,),
+        )
+        await conn.commit()
+    await repo.activate_subscription(1, "base", "ord2", db, days=30)
+    sub = await repo.get_subscription(1, "base", db)
+    until = datetime.fromisoformat(sub["active_until"])
+    expected = datetime.fromisoformat(future) + timedelta(days=30)
+    assert abs((until - expected).total_seconds()) < 5
+
+
+async def test_activate_expired_sub_extends_from_now(db):
+    """Expired sub: active_until is in the past, extends from now."""
+    past = (datetime.utcnow() - timedelta(days=5)).isoformat()
+    async with aiosqlite.connect(db) as conn:
+        await conn.execute(
+            "INSERT INTO subscriptions "
+            "(telegram_id, product_id, status, active_until, order_id, created_at, updated_at) "
+            "VALUES (1,'base','expired',?,NULL,datetime('now'),datetime('now'))",
+            (past,),
+        )
+        await conn.commit()
+    await repo.activate_subscription(1, "base", "ord3", db, days=30)
+    sub = await repo.get_subscription(1, "base", db)
+    until = datetime.fromisoformat(sub["active_until"])
+    expected = datetime.utcnow() + timedelta(days=30)
+    assert abs((until - expected).total_seconds()) < 5
+
+
+async def test_activate_custom_days(db):
+    """days parameter is honored."""
+    await repo.activate_subscription(1, "base", "ord1", db, days=60)
+    sub = await repo.get_subscription(1, "base", db)
+    until = datetime.fromisoformat(sub["active_until"])
+    expected = datetime.utcnow() + timedelta(days=60)
+    assert abs((until - expected).total_seconds()) < 5
