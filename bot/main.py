@@ -28,7 +28,7 @@ from db.init import init_tables
 from db.seeds import seed_products
 from handlers.admin import register_admin_handlers
 from handlers.client import register_client_handlers
-from scheduler.jobs import check_expired_subscriptions
+from scheduler.jobs import backup_database, check_expired_subscriptions
 from webhooks.prodamus import router as payment_router
 
 logging.basicConfig(
@@ -53,15 +53,22 @@ async def lifespan(app: FastAPI):
 
     # Меню команд
     await bot.set_my_commands(
-        [BotCommand(command="start", description="Каталог программ и оформление подписки")],
+        [
+            BotCommand(
+                command="start", description="Каталог программ и оформление подписки"
+            )
+        ],
         scope=BotCommandScopeDefault(),
     )
     await bot.set_my_commands(
         [
-            BotCommand(command="start", description="Каталог программ и оформление подписки"),
-            BotCommand(command="admin_list", description="Список активных подписчиков"),
-            BotCommand(command="admin_grant", description="Выдать доступ: /admin_grant tg_id product_id"),
-            BotCommand(command="admin_revoke", description="Отозвать доступ: /admin_revoke tg_id product_id"),
+            BotCommand(command="start",          description="Каталог программ и оформление подписки"),
+            BotCommand(command="admin_stats",    description="Статистика подписок"),
+            BotCommand(command="admin_find",     description="Найти пользователя: /admin_find @username"),
+            BotCommand(command="admin_list",     description="Список активных подписчиков"),
+            BotCommand(command="admin_expiring", description="Истекают скоро: /admin_expiring [days=7]"),
+            BotCommand(command="admin_grant",    description="Выдать доступ: /admin_grant tg_id product_id"),
+            BotCommand(command="admin_revoke",   description="Отозвать доступ: /admin_revoke tg_id product_id"),
         ],
         scope=BotCommandScopeChat(chat_id=settings.ADMIN_ID),
     )
@@ -80,6 +87,13 @@ async def lifespan(app: FastAPI):
         args=[bot, settings.DB_PATH],
         id="check_expired",
     )
+    scheduler.add_job(
+        backup_database,
+        trigger="interval",
+        hours=4,
+        args=[settings.DB_PATH],
+        id="backup_db",
+    )
     scheduler.start()
 
     polling_task = None
@@ -93,9 +107,7 @@ async def lifespan(app: FastAPI):
         # ── Polling-режим ──────────────────────────────────────────────────
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Webhook deleted, starting polling...")
-        polling_task = asyncio.create_task(
-            dp.start_polling(bot, handle_signals=False)
-        )
+        polling_task = asyncio.create_task(dp.start_polling(bot, handle_signals=False))
 
     yield
 
