@@ -16,6 +16,10 @@ from config import settings
 from db import repo
 from handlers.admin.keyboards import (
     PAGE_SIZE,
+    BTN_EXPIRING,
+    BTN_FIND,
+    BTN_LIST,
+    BTN_STATS,
     admin_list_kb,
     expiring_kb,
     format_list_page,
@@ -29,15 +33,21 @@ logger = logging.getLogger(__name__)
 
 
 def register_admin_commands(dp: Dispatcher) -> None:
-    dp.message.register(admin_grant, Command("admin_grant"))
-    dp.message.register(admin_revoke, Command("admin_revoke"))
-    dp.message.register(admin_list, Command("admin_list"))
-    dp.message.register(admin_stats, Command("admin_stats"))
-    dp.message.register(admin_find, Command("admin_find"))
+    _admin = F.from_user.id == settings.ADMIN_ID
+    dp.message.register(admin_grant,    Command("admin_grant"))
+    dp.message.register(admin_revoke,   Command("admin_revoke"))
+    dp.message.register(admin_list,     Command("admin_list"))
+    dp.message.register(admin_stats,    Command("admin_stats"))
+    dp.message.register(admin_find,     Command("admin_find"))
     dp.message.register(admin_expiring, Command("admin_expiring"))
+    # Reply-keyboard button handlers (same functions, button text as trigger)
+    dp.message.register(admin_stats,        _admin, F.text == BTN_STATS)
+    dp.message.register(admin_list,         _admin, F.text == BTN_LIST)
+    dp.message.register(admin_expiring,     _admin, F.text == BTN_EXPIRING)
+    dp.message.register(admin_find_prompt,  _admin, F.text == BTN_FIND)
     dp.message.register(
         admin_reply_to_user,
-        F.from_user.id == settings.ADMIN_ID,
+        _admin,
         F.reply_to_message,
         F.text,
         ~F.text.startswith("/"),
@@ -173,6 +183,11 @@ async def admin_find(msg: Message) -> None:
         all_products=all_products,
     )
     await msg.answer(text, parse_mode="HTML", reply_markup=kb)
+
+
+async def admin_find_prompt(msg: Message) -> None:
+    """Reply-keyboard shortcut: ask admin to type the search query."""
+    await msg.answer("Введи /admin_find @username или /admin_find tg_id")
 
 
 async def admin_expiring(msg: Message) -> None:

@@ -15,6 +15,7 @@ from aiogram.types import (
 
 from config import settings
 from db import repo
+from handlers.admin.keyboards import admin_panel_kb
 from services import channels
 from services.prodamus import build_payment_url
 
@@ -94,6 +95,9 @@ async def cmd_start(msg: Message) -> None:
     if not products:
         await msg.answer("Каналы пока не настроены. Загляни позже!")
         return
+
+    if msg.from_user.id == settings.ADMIN_ID:
+        await msg.answer("🔧 Панель администратора", reply_markup=admin_panel_kb())
 
     if settings.WELCOME_PHOTO:
         await msg.answer_photo(
