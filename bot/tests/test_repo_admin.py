@@ -41,7 +41,7 @@ async def populated_db(db):
             "VALUES (?,?,?,?,?,?,?)",
             [
                 (1, "base", "active",  _days(20), "ord1", _now(), _now()),  # alice, expires 20d
-                (2, "base", "active",  _days(5),  "ord2", _now(), _now()),  # bob,   expires 5d
+                (2, "base", "active",  _days(2),  "ord2", _now(), _now()),  # bob,   expires 2d
                 (3, "base", "expired", _days(-1), "ord3", _now(), _now()),  # charlie, expired
             ],
         )
@@ -67,7 +67,7 @@ async def test_get_stats(populated_db):
     assert s["total_users"] == 3
     assert s["active"] == 2
     assert s["expired_cancelled"] == 1
-    assert s["expiring_7d"] == 1  # only bob (5 days)
+    assert s["expiring_3d"] == 1  # only bob (expires in 2d)
 
 
 async def test_get_expiring_subscriptions_7d(populated_db):
@@ -114,6 +114,7 @@ async def test_activate_first_grant(db):
     """No existing sub: active_until = now + days."""
     await repo.activate_subscription(1, "base", "ord1", db, days=30)
     sub = await repo.get_subscription(1, "base", db)
+    assert sub is not None
     assert sub["status"] == "active"
     until = datetime.fromisoformat(sub["active_until"])
     expected = datetime.utcnow() + timedelta(days=30)
@@ -133,6 +134,7 @@ async def test_activate_extends_from_future_active_until(db):
         await conn.commit()
     await repo.activate_subscription(1, "base", "ord2", db, days=30)
     sub = await repo.get_subscription(1, "base", db)
+    assert sub is not None
     until = datetime.fromisoformat(sub["active_until"])
     expected = datetime.fromisoformat(future) + timedelta(days=30)
     assert abs((until - expected).total_seconds()) < 5
@@ -151,6 +153,7 @@ async def test_activate_expired_sub_extends_from_now(db):
         await conn.commit()
     await repo.activate_subscription(1, "base", "ord3", db, days=30)
     sub = await repo.get_subscription(1, "base", db)
+    assert sub is not None
     until = datetime.fromisoformat(sub["active_until"])
     expected = datetime.utcnow() + timedelta(days=30)
     assert abs((until - expected).total_seconds()) < 5
@@ -160,6 +163,7 @@ async def test_activate_custom_days(db):
     """days parameter is honored."""
     await repo.activate_subscription(1, "base", "ord1", db, days=60)
     sub = await repo.get_subscription(1, "base", db)
+    assert sub is not None
     until = datetime.fromisoformat(sub["active_until"])
     expected = datetime.utcnow() + timedelta(days=60)
     assert abs((until - expected).total_seconds()) < 5

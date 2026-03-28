@@ -1,15 +1,14 @@
-"""Tests for admin keyboard builders and text formatters."""
+"""Tests for keyboard builders and text formatters."""
 
 from aiogram.types import InlineKeyboardMarkup
-from handlers.admin.keyboards import (
+from ui.keyboards import (
     PAGE_SIZE,
     admin_list_kb,
-    format_list_page,
-    format_user_card,
     payment_notification_kb,
     payment_revoke_confirm_kb,
     user_card_kb,
 )
+from ui.messages import format_list_page, format_user_card
 
 
 # ── keyboard builders ──────────────────────────────────────────────────────────

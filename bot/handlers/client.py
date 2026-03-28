@@ -2,45 +2,28 @@
 
 import logging
 
-from datetime import datetime
-
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
-from aiogram.types import (
-    CallbackQuery,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    Message,
-)
+from aiogram.types import CallbackQuery, Message
 
+from app.context import AppContext
+from app import admin as app_admin
+from app import subscriptions
 from config import settings
-from db import repo
-from handlers.admin.keyboards import admin_panel_kb
-from services import channels
-from services.prodamus import build_payment_url
+from ui import keyboards, messages
 
 logger = logging.getLogger(__name__)
 
-WELCOME_TEXT = (
-    "💥 <b>Добро пожаловать в Calisthenics 1.0 BAZA (второй поток)!</b>\n"
-    "Ты только что сделал первый шаг к сильному, гибкому и прокачанному телу "
-    "— без тренажёров и спортзалов, только с весом своего тела 💪\n\n"
-    "📌 <b>Что тебя ждёт:</b>\n"
-    "— Более 120 упражнений калистеники\n"
-    "— Программы с 4 уровнями сложности\n"
-    "— Пошаговый прогресс от базовых движений до элементов силы\n"
-    "— Поддержка от Евгения Семеняка и сообщества единомышленников\n"
-    "— Всё, что нужно: 4 тренировки в неделю по 30–60 мин\n\n"
-    "Действуй. Сила, красота и контроль над телом — это не мечта, а практика.\n"
-    "<i>С уважением, Евгений Семеняка</i>"
-)
+
+def _msg(call: CallbackQuery) -> Message:
+    assert isinstance(call.message, Message)
+    return call.message
 
 
 def register_client_handlers(dp: Dispatcher) -> None:
     dp.message.register(cmd_start, Command("start"))
     dp.callback_query.register(cb_relink, F.data.startswith("relink:"))
     dp.callback_query.register(cb_test_grant, F.data.startswith("test_grant:"))
-    # Catch-all: любое текстовое сообщение не от админа и не команда
     dp.message.register(
         user_message_to_admin,
         F.text,
@@ -49,143 +32,90 @@ def register_client_handlers(dp: Dispatcher) -> None:
     )
 
 
-async def cmd_start(msg: Message) -> None:
-    await repo.upsert_user(
-        msg.from_user.id,
-        msg.from_user.username,
-        msg.from_user.first_name,
-        settings.DB_PATH,
-    )
+async def cmd_start(msg: Message, app: AppContext) -> None:
+    if msg.from_user is None:
+        return
+    await app_admin.upsert_user(app, msg.from_user.id, msg.from_user.username, msg.from_user.first_name)
 
-    products = await repo.get_all_products(settings.DB_PATH)
-    subs = await repo.get_subscriptions(msg.from_user.id, settings.DB_PATH)
-    sub_map = {s["product_id"]: s for s in subs}
-
-    # Строим кнопки: активным — "получить ссылку", остальным — прямой URL Prodamus
-    buttons: list[list[InlineKeyboardButton]] = []
-
-    for p in products:
-        sub = sub_map.get(p["product_id"])
-        status = sub["status"] if sub else None
-
-        if status == "active":
-            buttons.append([InlineKeyboardButton(
-                text=f"🔗 Получить ссылку — {p['name']}",
-                callback_data=f"relink:{p['product_id']}",
-            )])
-        elif settings.TEST_MODE:
-            # Тестовый режим: показываем кнопку, подписка выдаётся только при клике
-            buttons.append([InlineKeyboardButton(
-                text=f"🧪 Тест — {p['name']}",
-                callback_data=f"test_grant:{p['product_id']}",
-            )])
-        else:
-            pay_url = build_payment_url(
-                tg_id=msg.from_user.id,
-                product=p,
-                webhook_base_url=settings.WEBHOOK_BASE_URL,
-                secret=settings.PRODAMUS_SECRET,
-            )
-            verb = "🔄" if status in ("expired", "cancelled") else "💳"
-            buttons.append([InlineKeyboardButton(
-                text=f"{verb} Оформить подписку — {p['name']} ({p['price']} ₽/мес)",
-                url=pay_url,
-            )])
-
+    products = await app_admin.get_products(app)
     if not products:
         await msg.answer("Каналы пока не настроены. Загляни позже!")
         return
 
+    subs = await subscriptions.get_user_subs(app, msg.from_user.id)
+    sub_map = {s["product_id"]: s for s in subs}
+    kb = keyboards.start_kb(
+        products, sub_map, settings.TEST_MODE,
+        msg.from_user.id, settings.WEBHOOK_BASE_URL, settings.PRODAMUS_SECRET,
+    )
+
     if msg.from_user.id == settings.ADMIN_ID:
-        await msg.answer("🔧 Панель администратора", reply_markup=admin_panel_kb())
+        await msg.answer("🔧 Панель администратора", reply_markup=keyboards.admin_panel_kb())
 
     if settings.WELCOME_PHOTO:
         await msg.answer_photo(
             photo=settings.WELCOME_PHOTO,
-            caption=WELCOME_TEXT,
+            caption=messages.WELCOME_TEXT,
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+            reply_markup=kb,
         )
     else:
-        await msg.answer(
-            WELCOME_TEXT,
-            parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
-        )
+        await msg.answer(messages.WELCOME_TEXT, parse_mode="HTML", reply_markup=kb)
 
 
 async def user_message_to_admin(msg: Message, bot: Bot) -> None:
     """Пересылает текстовое сообщение пользователя админу."""
+    if msg.from_user is None:
+        return
     user = msg.from_user
     name = user.full_name or "Неизвестный"
     username_part = f"@{user.username}" if user.username else "без @"
-
     await bot.send_message(
         settings.ADMIN_ID,
-        f"💬 {name} ({username_part}) #id{user.id}\n"
-        f"{'─' * 20}\n"
-        f"{msg.text}",
+        f"💬 {name} ({username_part}) #id{user.id}\n{'─' * 20}\n{msg.text}",
     )
     await msg.answer("✉️ Сообщение отправлено тренеру. Ожидайте ответа.")
 
 
-async def cb_test_grant(call: CallbackQuery, bot: Bot) -> None:
+async def cb_test_grant(call: CallbackQuery, app: AppContext) -> None:
     """TEST_MODE: выдаёт активную подписку и сразу возвращает ссылки."""
+    assert call.data is not None
     product_id = call.data.split(":", 1)[1]
-    product = await repo.get_product(product_id, settings.DB_PATH)
-
+    product = await app_admin.get_product(app, product_id)
     if not product:
         await call.answer("Продукт не найден", show_alert=True)
         return
-
-    # active_until = now → scheduler подберёт эту подписку в течение 5 мин и проверит авто-кик
-    await repo.upsert_subscription(
-        telegram_id=call.from_user.id,
-        product_id=product_id,
-        status="active",
-        active_until=datetime.utcnow().isoformat(),
-        db_path=settings.DB_PATH,
-    )
-    logger.info("TEST_MODE: granted subscription %s to user %s (expires now)", product_id, call.from_user.id)
-
     try:
-        channel_link, discussion_link = await channels.grant_access(bot, call.from_user.id, product)
+        channel_link, discussion_link = await subscriptions.grant_test(app, call.from_user.id, product_id)
     except Exception as e:
-        logger.error("TEST_MODE grant_access failed: %s", e)
+        logger.error("TEST_MODE grant_test failed: %s", e)
         await call.answer(f"Ошибка создания ссылки: {e}", show_alert=True)
         return
-
-    await call.message.answer(
-        f"🧪 <b>TEST MODE — «{product['name']}»</b>\n\n"
-        f"Канал: {channel_link}\n"
-        f"Беседа: {discussion_link}\n\n"
-        "<i>Ссылки одноразовые, действуют 7 дней. Кликни чтобы вступить.</i>",
+    await _msg(call).answer(
+        messages.format_test_grant(product["name"], channel_link, discussion_link),
         parse_mode="HTML",
     )
     await call.answer()
 
 
-async def cb_relink(call: CallbackQuery, bot: Bot) -> None:
+async def cb_relink(call: CallbackQuery, app: AppContext) -> None:
+    assert call.data is not None
     product_id = call.data.split(":", 1)[1]
-    product = await repo.get_product(product_id, settings.DB_PATH)
-    sub = await repo.get_subscription(call.from_user.id, product_id, settings.DB_PATH)
-
-    if not sub or sub["status"] != "active":
-        await call.answer("Подписка неактивна", show_alert=True)
+    product = await app_admin.get_product(app, product_id)
+    if not product:
+        await call.answer("Продукт не найден", show_alert=True)
         return
-
     try:
-        channel_link, discussion_link = await channels.grant_access(bot, call.from_user.id, product)
+        channel_link, discussion_link = await subscriptions.relink(app, call.from_user.id, product_id)
+    except ValueError as e:
+        await call.answer(str(e), show_alert=True)
+        return
     except Exception as e:
-        logger.error("grant_access failed: %s", e)
+        logger.error("relink failed: %s", e)
         await call.answer("Не удалось создать ссылку. Попробуй позже.", show_alert=True)
         return
-
-    await call.message.answer(
-        f"🔗 <b>Ссылки для «{product['name']}»</b>\n\n"
-        f"Канал: {channel_link}\n"
-        f"Беседа: {discussion_link}\n\n"
-        "<i>Ссылки одноразовые и действуют 7 дней.</i>",
+    await _msg(call).answer(
+        messages.format_relink(product["name"], channel_link, discussion_link),
         parse_mode="HTML",
     )
     await call.answer()

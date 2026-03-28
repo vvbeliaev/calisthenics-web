@@ -1,30 +1,24 @@
-"""Admin callback query handlers and payment notification.
-
-notify_admin is called from webhooks/prodamus.py after a successful payment.
-All cb_* functions handle inline keyboard button presses.
-"""
+"""Admin callback query handlers."""
 
 import logging
 from datetime import datetime
 
-from aiogram import Bot, Dispatcher, F
-from aiogram.types import CallbackQuery
+from aiogram import Dispatcher, F
+from aiogram.types import CallbackQuery, Message as TgMessage
 
+from app.context import AppContext
+from app import admin as app_admin
+from app import subscriptions
 from config import settings
-from db import repo
-from handlers.admin.keyboards import (
-    PAGE_SIZE,
-    admin_list_kb,
-    expiring_kb,
-    format_list_page,
-    format_user_card,
-    payment_notification_kb,
-    payment_revoke_confirm_kb,
-    user_card_kb,
-)
-from services import channels
+from ui import keyboards, messages
 
 logger = logging.getLogger(__name__)
+
+
+def _msg(call: CallbackQuery) -> TgMessage:
+    """Narrow call.message to Message; always accessible in our admin callbacks."""
+    assert isinstance(call.message, TgMessage)
+    return call.message
 
 
 def register_admin_callbacks(dp: Dispatcher) -> None:
@@ -50,59 +44,21 @@ def register_admin_callbacks(dp: Dispatcher) -> None:
     dp.callback_query.register(cb_aexp_find, _admin, F.data.startswith("aexp_find:"))
 
 
-# ── payment notification ───────────────────────────────────────────────────────
-
-
-async def notify_admin(
-    bot: Bot, tg_id: int, product: dict, amount: str, order_id: str
-) -> None:
-    """Send payment notification to admin with grant/revoke action buttons."""
-    username_info = ""
-    try:
-        chat = await bot.get_chat(tg_id)
-        username_info = f"@{chat.username} " if chat.username else ""
-    except Exception:
-        pass
-
-    await bot.send_message(
-        settings.ADMIN_ID,
-        f"💰 <b>Новая оплата!</b>\n\n"
-        f"Пользователь: {username_info}(tg_id: {tg_id})\n"
-        f"Продукт: {product['name']}\n"
-        f"Сумма: {amount} ₽\n"
-        f"Order ID: {order_id}",
-        parse_mode="HTML",
-        reply_markup=payment_notification_kb(tg_id, product["product_id"]),
-    )
-
-
 # ── payment notification callbacks ────────────────────────────────────────────
 
 
-async def cb_apay_grant(call: CallbackQuery, bot: Bot) -> None:
+async def cb_apay_grant(call: CallbackQuery, app: AppContext) -> None:
+    assert call.data is not None
     _, tg_id_str, product_id = call.data.split(":", 2)
-    tg_id = int(tg_id_str)
-    product = await repo.get_product(product_id, settings.DB_PATH)
-    if not product:
-        await call.answer("Продукт не найден", show_alert=True)
-        return
-    await repo.activate_subscription(
-        tg_id, product_id, order_id="manual", db_path=settings.DB_PATH
-    )
-    channel_link, discussion_link = await channels.grant_access(bot, tg_id, product)
     try:
-        await bot.send_message(
-            tg_id,
-            f"✅ <b>Доступ к «{product['name']}» открыт!</b>\n\n"
-            f"Канал: {channel_link}\nБеседа: {discussion_link}\n\n"
-            "<i>Ссылки одноразовые, действуют 7 дней.</i>",
-            parse_mode="HTML",
-        )
-    except Exception as e:
-        logger.warning("Не удалось уведомить пользователя %s: %s", tg_id, e)
+        await subscriptions.grant(app, int(tg_id_str), product_id, order_id="manual")
+    except ValueError as e:
+        await call.answer(str(e), show_alert=True)
+        return
     ts = datetime.now().strftime("%d.%m.%Y %H:%M")
-    await call.message.edit_text(
-        call.message.html_text + f"\n\n✅ Доступ выдан вручную {ts}",
+    msg = _msg(call)
+    await msg.edit_text(
+        msg.html_text + f"\n\n✅ Доступ выдан вручную {ts}",
         parse_mode="HTML",
         reply_markup=None,
     )
@@ -111,26 +67,27 @@ async def cb_apay_grant(call: CallbackQuery, bot: Bot) -> None:
 
 async def cb_apay_revoke(call: CallbackQuery) -> None:
     """First step: show confirmation keyboard before revoking."""
+    assert call.data is not None
     _, tg_id_str, product_id = call.data.split(":", 2)
-    await call.message.edit_reply_markup(
-        reply_markup=payment_revoke_confirm_kb(int(tg_id_str), product_id)
+    await _msg(call).edit_reply_markup(
+        reply_markup=keyboards.payment_revoke_confirm_kb(int(tg_id_str), product_id)
     )
     await call.answer()
 
 
-async def cb_apay_revoke_confirm(call: CallbackQuery, bot: Bot) -> None:
+async def cb_apay_revoke_confirm(call: CallbackQuery, app: AppContext) -> None:
     """Second step: actually revoke after confirmation."""
+    assert call.data is not None
     _, tg_id_str, product_id = call.data.split(":", 2)
-    tg_id = int(tg_id_str)
-    product = await repo.get_product(product_id, settings.DB_PATH)
-    if not product:
-        await call.answer("Продукт не найден", show_alert=True)
+    try:
+        await subscriptions.revoke(app, int(tg_id_str), product_id, notify_user=False)
+    except ValueError as e:
+        await call.answer(str(e), show_alert=True)
         return
-    await repo.set_subscription_status(tg_id, product_id, "cancelled", settings.DB_PATH)
-    await channels.revoke_access(bot, tg_id, product)
     ts = datetime.now().strftime("%d.%m.%Y %H:%M")
-    await call.message.edit_text(
-        call.message.html_text + f"\n\n❌ Доступ отозван вручную {ts}",
+    msg = _msg(call)
+    await msg.edit_text(
+        msg.html_text + f"\n\n❌ Доступ отозван вручную {ts}",
         parse_mode="HTML",
         reply_markup=None,
     )
@@ -139,9 +96,10 @@ async def cb_apay_revoke_confirm(call: CallbackQuery, bot: Bot) -> None:
 
 async def cb_apay_revoke_cancel(call: CallbackQuery) -> None:
     """Restore original grant/revoke keyboard after cancelling revoke."""
+    assert call.data is not None
     _, tg_id_str, product_id = call.data.split(":", 2)
-    await call.message.edit_reply_markup(
-        reply_markup=payment_notification_kb(int(tg_id_str), product_id)
+    await _msg(call).edit_reply_markup(
+        reply_markup=keyboards.payment_notification_kb(int(tg_id_str), product_id)
     )
     await call.answer("Отменено")
 
@@ -149,99 +107,84 @@ async def cb_apay_revoke_cancel(call: CallbackQuery) -> None:
 # ── user card callbacks (/admin_find) ─────────────────────────────────────────
 
 
-async def cb_afind_grant(call: CallbackQuery, bot: Bot) -> None:
+async def cb_afind_grant(call: CallbackQuery, app: AppContext) -> None:
+    assert call.data is not None
     _, tg_id_str, product_id = call.data.split(":", 2)
-    tg_id = int(tg_id_str)
-    product = await repo.get_product(product_id, settings.DB_PATH)
-    if not product:
-        await call.answer("Продукт не найден", show_alert=True)
-        return
-    await repo.activate_subscription(
-        tg_id, product_id, order_id="manual", db_path=settings.DB_PATH
-    )
-    channel_link, discussion_link = await channels.grant_access(bot, tg_id, product)
     try:
-        await bot.send_message(
-            tg_id,
-            f"✅ <b>Доступ к «{product['name']}» открыт!</b>\n\n"
-            f"Канал: {channel_link}\nБеседа: {discussion_link}\n\n"
-            "<i>Ссылки одноразовые, действуют 7 дней.</i>",
-            parse_mode="HTML",
-        )
-    except Exception as e:
-        logger.warning("Не удалось уведомить пользователя %s: %s", tg_id, e)
-    await _refresh_user_card(call, tg_id)
+        await subscriptions.grant(app, int(tg_id_str), product_id, order_id="manual")
+    except ValueError as e:
+        await call.answer(str(e), show_alert=True)
+        return
+    await _refresh_user_card(call, app, int(tg_id_str))
 
 
-async def cb_afind_revoke(call: CallbackQuery, bot: Bot) -> None:
+async def cb_afind_revoke(call: CallbackQuery, app: AppContext) -> None:
+    assert call.data is not None
     _, tg_id_str, product_id = call.data.split(":", 2)
-    tg_id = int(tg_id_str)
-    product = await repo.get_product(product_id, settings.DB_PATH)
-    if not product:
-        await call.answer("Продукт не найден", show_alert=True)
-        return
-    await repo.set_subscription_status(tg_id, product_id, "cancelled", settings.DB_PATH)
-    await channels.revoke_access(bot, tg_id, product)
     try:
-        await bot.send_message(
-            tg_id, "❌ Ваш доступ к каналу был отозван администратором."
-        )
-    except Exception as e:
-        logger.warning("Не удалось уведомить пользователя %s: %s", tg_id, e)
-    await _refresh_user_card(call, tg_id)
+        await subscriptions.revoke(app, int(tg_id_str), product_id, notify_user=True)
+    except ValueError as e:
+        await call.answer(str(e), show_alert=True)
+        return
+    await _refresh_user_card(call, app, int(tg_id_str))
 
 
-async def _refresh_user_card(call: CallbackQuery, tg_id: int) -> None:
-    """Re-render and edit the user card message after a grant/revoke action."""
-    user = await repo.find_user(settings.DB_PATH, str(tg_id))
-    all_products = await repo.get_all_products(settings.DB_PATH)
+async def _refresh_user_card(call: CallbackQuery, app: AppContext, tg_id: int) -> None:
+    user = await app_admin.find_user(app, str(tg_id))
     if not user:
         await call.answer("Готово")
         return
-    text = format_user_card(user)
-    kb = user_card_kb(tg_id, user["subscriptions"], all_products)
-    await call.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+    products = await app_admin.get_products(app)
+    await _msg(call).edit_text(
+        messages.format_user_card(user),
+        parse_mode="HTML",
+        reply_markup=keyboards.user_card_kb(tg_id, user["subscriptions"], products),
+    )
     await call.answer("Готово")
 
 
-# ── user card open callbacks (/admin_list row click, /admin_expiring find) ────
+# ── user card open callbacks ───────────────────────────────────────────────────
 
 
-async def _send_user_card(call: CallbackQuery, tg_id: int) -> None:
-    """Fetch user data and send a new user card message."""
-    user = await repo.find_user(settings.DB_PATH, str(tg_id))
+async def _send_user_card(call: CallbackQuery, app: AppContext, tg_id: int) -> None:
+    user = await app_admin.find_user(app, str(tg_id))
     if not user:
         await call.answer("Пользователь не найден", show_alert=True)
         return
-    all_products = await repo.get_all_products(settings.DB_PATH)
-    text = format_user_card(user)
-    kb = user_card_kb(tg_id, user["subscriptions"], all_products)
-    await call.message.answer(text, parse_mode="HTML", reply_markup=kb)
+    products = await app_admin.get_products(app)
+    await _msg(call).answer(
+        messages.format_user_card(user),
+        parse_mode="HTML",
+        reply_markup=keyboards.user_card_kb(tg_id, user["subscriptions"], products),
+    )
     await call.answer()
 
 
-async def cb_alist_user(call: CallbackQuery) -> None:
-    tg_id = int(call.data.split(":", 1)[1])
-    await _send_user_card(call, tg_id)
+async def cb_alist_user(call: CallbackQuery, app: AppContext) -> None:
+    assert call.data is not None
+    await _send_user_card(call, app, int(call.data.split(":", 1)[1]))
 
 
-async def cb_aexp_find(call: CallbackQuery) -> None:
-    tg_id = int(call.data.split(":", 1)[1])
-    await _send_user_card(call, tg_id)
+async def cb_aexp_find(call: CallbackQuery, app: AppContext) -> None:
+    assert call.data is not None
+    await _send_user_card(call, app, int(call.data.split(":", 1)[1]))
 
 
 # ── pagination callback (/admin_list) ─────────────────────────────────────────
 
 
-async def cb_alist(call: CallbackQuery) -> None:
+async def cb_alist(call: CallbackQuery, app: AppContext) -> None:
+    assert call.data is not None
     offset = int(call.data.split(":", 1)[1])
-    subs = await repo.get_active_subscriptions(settings.DB_PATH)
+    subs = await app_admin.list_subscriptions(app)
     total = len(subs)
-    page = subs[offset : offset + PAGE_SIZE]
+    page = subs[offset : offset + keyboards.PAGE_SIZE]
     if not page:
         await call.answer("Нет данных", show_alert=True)
         return
-    text = format_list_page(page, offset=offset, total=total)
-    kb = admin_list_kb(offset=offset, total=total, page=page)
-    await call.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+    await _msg(call).edit_text(
+        messages.format_list_page(page, offset=offset, total=total),
+        parse_mode="HTML",
+        reply_markup=keyboards.admin_list_kb(offset=offset, total=total, page=page),
+    )
     await call.answer()

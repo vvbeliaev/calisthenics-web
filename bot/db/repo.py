@@ -201,25 +201,25 @@ async def get_stats(db_path: str) -> dict:
     """Aggregate counts for /admin_stats dashboard."""
     async with aiosqlite.connect(db_path) as db:
         async with db.execute("SELECT COUNT(*) FROM users") as cur:
-            total_users: int = (await cur.fetchone())[0]
+            total_users: int = (await cur.fetchone() or (0,))[0]
         async with db.execute(
             "SELECT COUNT(*) FROM subscriptions WHERE status = 'active'"
         ) as cur:
-            active: int = (await cur.fetchone())[0]
+            active: int = (await cur.fetchone() or (0,))[0]
         async with db.execute(
             "SELECT COUNT(*) FROM subscriptions WHERE status IN ('expired', 'cancelled')"
         ) as cur:
-            expired_cancelled: int = (await cur.fetchone())[0]
+            expired_cancelled: int = (await cur.fetchone() or (0,))[0]
         async with db.execute(
             "SELECT COUNT(*) FROM subscriptions "
-            "WHERE status = 'active' AND active_until < datetime('now', '+7 days')"
+            "WHERE status = 'active' AND active_until < datetime('now', '+3 days')"
         ) as cur:
-            expiring_7d: int = (await cur.fetchone())[0]
+            expiring_3d: int = (await cur.fetchone() or (0,))[0]
     return {
         "total_users": total_users,
         "active": active,
         "expired_cancelled": expired_cancelled,
-        "expiring_7d": expiring_7d,
+        "expiring_3d": expiring_3d,
     }
 
 

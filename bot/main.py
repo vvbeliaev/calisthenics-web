@@ -23,6 +23,7 @@ from aiogram.types import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request, Response
 
+from app.context import AppContext
 from config import settings
 from db.init import init_tables
 from db.seeds import seed_products
@@ -47,17 +48,19 @@ async def lifespan(app: FastAPI):
     await init_tables(settings.DB_PATH)
     await seed_products(settings.DB_PATH)
 
+    # AppContext — единый объект зависимостей для всего приложения
+    ctx = AppContext(bot=bot, db_path=settings.DB_PATH)
+    dp["app"] = ctx          # aiogram DI: handlers receive it as `app: AppContext`
+    app.state.app_ctx = ctx  # FastAPI state: webhooks access it via request.app.state.app_ctx
+    app.state.prodamus_secret = settings.PRODAMUS_SECRET
+
     # Хендлеры
     register_client_handlers(dp)
     register_admin_handlers(dp)
 
     # Меню команд
     await bot.set_my_commands(
-        [
-            BotCommand(
-                command="start", description="Каталог программ и оформление подписки"
-            )
-        ],
+        [BotCommand(command="start", description="Каталог программ и оформление подписки")],
         scope=BotCommandScopeDefault(),
     )
     await bot.set_my_commands(
@@ -66,17 +69,12 @@ async def lifespan(app: FastAPI):
             BotCommand(command="admin_stats",    description="Статистика подписок"),
             BotCommand(command="admin_find",     description="Найти пользователя: /admin_find @username"),
             BotCommand(command="admin_list",     description="Список активных подписчиков"),
-            BotCommand(command="admin_expiring", description="Истекают скоро: /admin_expiring [days=7]"),
+            BotCommand(command="admin_expiring", description="Истекают скоро: /admin_expiring [days=3]"),
             BotCommand(command="admin_grant",    description="Выдать доступ: /admin_grant tg_id product_id"),
             BotCommand(command="admin_revoke",   description="Отозвать доступ: /admin_revoke tg_id product_id"),
         ],
         scope=BotCommandScopeChat(chat_id=settings.ADMIN_ID),
     )
-
-    # Расшариваем для вебхуков оплаты
-    app.state.bot = bot
-    app.state.db_path = settings.DB_PATH
-    app.state.prodamus_secret = settings.PRODAMUS_SECRET
 
     # Планировщик
     scheduler = AsyncIOScheduler()
@@ -84,7 +82,7 @@ async def lifespan(app: FastAPI):
         check_expired_subscriptions,
         trigger="interval",
         minutes=5,
-        args=[bot, settings.DB_PATH],
+        args=[ctx],
         id="check_expired",
         misfire_grace_time=60,
     )
@@ -100,12 +98,10 @@ async def lifespan(app: FastAPI):
     polling_task = None
 
     if settings.WEBHOOK_BASE_URL:
-        # ── Webhook-режим ──────────────────────────────────────────────────
         webhook_url = f"{settings.WEBHOOK_BASE_URL}/bot/webhook"
         await bot.set_webhook(webhook_url, drop_pending_updates=True)
         logger.info("Webhook set: %s", webhook_url)
     else:
-        # ── Polling-режим ──────────────────────────────────────────────────
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Webhook deleted, starting polling...")
         polling_task = asyncio.create_task(dp.start_polling(bot, handle_signals=False))
@@ -133,7 +129,6 @@ app.include_router(payment_router)
 
 @app.post("/bot/webhook")
 async def bot_webhook(request: Request) -> Response:
-    """Принимает апдейты от Telegram в webhook-режиме."""
     data = await request.json()
     update = Update.model_validate(data)
     await dp.feed_update(bot=bot, update=update)
