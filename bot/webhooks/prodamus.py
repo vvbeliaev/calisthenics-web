@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 
 from db import repo
-from handlers.admin import notify_admin
+from handlers.admin.callbacks import notify_admin
 from services import channels
 from services.prodamus import verify_signature
 
