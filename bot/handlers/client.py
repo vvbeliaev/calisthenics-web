@@ -2,6 +2,8 @@
 
 import logging
 
+from datetime import datetime
+
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import (
@@ -132,13 +134,15 @@ async def cb_test_grant(call: CallbackQuery, bot: Bot) -> None:
         await call.answer("Продукт не найден", show_alert=True)
         return
 
+    # active_until = now → scheduler подберёт эту подписку в течение 5 мин и проверит авто-кик
     await repo.upsert_subscription(
         telegram_id=call.from_user.id,
         product_id=product_id,
         status="active",
+        active_until=datetime.utcnow().isoformat(),
         db_path=settings.DB_PATH,
     )
-    logger.info("TEST_MODE: granted subscription %s to user %s", product_id, call.from_user.id)
+    logger.info("TEST_MODE: granted subscription %s to user %s (expires now)", product_id, call.from_user.id)
 
     try:
         channel_link, discussion_link = await channels.grant_access(bot, call.from_user.id, product)

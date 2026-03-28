@@ -28,20 +28,34 @@ logger = logging.getLogger(__name__)
 
 
 def register_admin_callbacks(dp: Dispatcher) -> None:
-    dp.callback_query.register(cb_apay_grant,          F.data.startswith("apay_grant:"))
-    dp.callback_query.register(cb_apay_revoke_confirm, F.data.startswith("apay_revoke_confirm:"))
-    dp.callback_query.register(cb_apay_revoke_cancel,  F.data.startswith("apay_revoke_cancel:"))
-    dp.callback_query.register(cb_apay_revoke,         F.data.startswith("apay_revoke:"))
-    dp.callback_query.register(cb_afind_grant,         F.data.startswith("afind_grant:"))
-    dp.callback_query.register(cb_afind_revoke,        F.data.startswith("afind_revoke:"))
-    dp.callback_query.register(cb_alist_user,          F.data.startswith("alist_user:"))
-    dp.callback_query.register(cb_alist,               F.data.startswith("alist:"))
-    dp.callback_query.register(cb_aexp_find,           F.data.startswith("aexp_find:"))
+    _admin = F.from_user.id == settings.ADMIN_ID
+    dp.callback_query.register(cb_apay_grant, _admin, F.data.startswith("apay_grant:"))
+    dp.callback_query.register(
+        cb_apay_revoke_confirm, _admin, F.data.startswith("apay_revoke_confirm:")
+    )
+    dp.callback_query.register(
+        cb_apay_revoke_cancel, _admin, F.data.startswith("apay_revoke_cancel:")
+    )
+    dp.callback_query.register(
+        cb_apay_revoke, _admin, F.data.startswith("apay_revoke:")
+    )
+    dp.callback_query.register(
+        cb_afind_grant, _admin, F.data.startswith("afind_grant:")
+    )
+    dp.callback_query.register(
+        cb_afind_revoke, _admin, F.data.startswith("afind_revoke:")
+    )
+    dp.callback_query.register(cb_alist_user, _admin, F.data.startswith("alist_user:"))
+    dp.callback_query.register(cb_alist, _admin, F.data.startswith("alist:"))
+    dp.callback_query.register(cb_aexp_find, _admin, F.data.startswith("aexp_find:"))
 
 
 # ── payment notification ───────────────────────────────────────────────────────
 
-async def notify_admin(bot: Bot, tg_id: int, product: dict, amount: str, order_id: str) -> None:
+
+async def notify_admin(
+    bot: Bot, tg_id: int, product: dict, amount: str, order_id: str
+) -> None:
     """Send payment notification to admin with grant/revoke action buttons."""
     username_info = ""
     try:
@@ -64,6 +78,7 @@ async def notify_admin(bot: Bot, tg_id: int, product: dict, amount: str, order_i
 
 # ── payment notification callbacks ────────────────────────────────────────────
 
+
 async def cb_apay_grant(call: CallbackQuery, bot: Bot) -> None:
     _, tg_id_str, product_id = call.data.split(":", 2)
     tg_id = int(tg_id_str)
@@ -71,7 +86,9 @@ async def cb_apay_grant(call: CallbackQuery, bot: Bot) -> None:
     if not product:
         await call.answer("Продукт не найден", show_alert=True)
         return
-    await repo.activate_subscription(tg_id, product_id, order_id="manual", db_path=settings.DB_PATH)
+    await repo.activate_subscription(
+        tg_id, product_id, order_id="manual", db_path=settings.DB_PATH
+    )
     channel_link, discussion_link = await channels.grant_access(bot, tg_id, product)
     try:
         await bot.send_message(
@@ -131,6 +148,7 @@ async def cb_apay_revoke_cancel(call: CallbackQuery) -> None:
 
 # ── user card callbacks (/admin_find) ─────────────────────────────────────────
 
+
 async def cb_afind_grant(call: CallbackQuery, bot: Bot) -> None:
     _, tg_id_str, product_id = call.data.split(":", 2)
     tg_id = int(tg_id_str)
@@ -138,7 +156,9 @@ async def cb_afind_grant(call: CallbackQuery, bot: Bot) -> None:
     if not product:
         await call.answer("Продукт не найден", show_alert=True)
         return
-    await repo.activate_subscription(tg_id, product_id, order_id="manual", db_path=settings.DB_PATH)
+    await repo.activate_subscription(
+        tg_id, product_id, order_id="manual", db_path=settings.DB_PATH
+    )
     channel_link, discussion_link = await channels.grant_access(bot, tg_id, product)
     try:
         await bot.send_message(
@@ -163,7 +183,9 @@ async def cb_afind_revoke(call: CallbackQuery, bot: Bot) -> None:
     await repo.set_subscription_status(tg_id, product_id, "cancelled", settings.DB_PATH)
     await channels.revoke_access(bot, tg_id, product)
     try:
-        await bot.send_message(tg_id, "❌ Ваш доступ к каналу был отозван администратором.")
+        await bot.send_message(
+            tg_id, "❌ Ваш доступ к каналу был отозван администратором."
+        )
     except Exception as e:
         logger.warning("Не удалось уведомить пользователя %s: %s", tg_id, e)
     await _refresh_user_card(call, tg_id)
@@ -183,6 +205,7 @@ async def _refresh_user_card(call: CallbackQuery, tg_id: int) -> None:
 
 
 # ── user card open callbacks (/admin_list row click, /admin_expiring find) ────
+
 
 async def _send_user_card(call: CallbackQuery, tg_id: int) -> None:
     """Fetch user data and send a new user card message."""
@@ -209,11 +232,12 @@ async def cb_aexp_find(call: CallbackQuery) -> None:
 
 # ── pagination callback (/admin_list) ─────────────────────────────────────────
 
+
 async def cb_alist(call: CallbackQuery) -> None:
     offset = int(call.data.split(":", 1)[1])
     subs = await repo.get_active_subscriptions(settings.DB_PATH)
     total = len(subs)
-    page = subs[offset: offset + PAGE_SIZE]
+    page = subs[offset : offset + PAGE_SIZE]
     if not page:
         await call.answer("Нет данных", show_alert=True)
         return
