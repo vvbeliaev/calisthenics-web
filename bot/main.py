@@ -14,7 +14,12 @@ import logging
 from contextlib import asynccontextmanager
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import Update
+from aiogram.types import (
+    BotCommand,
+    BotCommandScopeChat,
+    BotCommandScopeDefault,
+    Update,
+)
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request, Response
 
@@ -45,6 +50,21 @@ async def lifespan(app: FastAPI):
     # Хендлеры
     register_client_handlers(dp)
     register_admin_handlers(dp)
+
+    # Меню команд
+    await bot.set_my_commands(
+        [BotCommand(command="start", description="Каталог программ и оформление подписки")],
+        scope=BotCommandScopeDefault(),
+    )
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Каталог программ и оформление подписки"),
+            BotCommand(command="admin_list", description="Список активных подписчиков"),
+            BotCommand(command="admin_grant", description="Выдать доступ: /admin_grant tg_id product_id"),
+            BotCommand(command="admin_revoke", description="Отозвать доступ: /admin_revoke tg_id product_id"),
+        ],
+        scope=BotCommandScopeChat(chat_id=settings.ADMIN_ID),
+    )
 
     # Расшариваем для вебхуков оплаты
     app.state.bot = bot

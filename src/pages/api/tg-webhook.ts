@@ -51,11 +51,11 @@ export const POST: APIRoute = async ({ request }) => {
     // Notify owner about new bot start
     const ownerChatId = process.env.TG_CHAT_ID ?? import.meta.env.TG_CHAT_ID;
     if (ownerChatId && String(chatId) !== String(ownerChatId)) {
-      const lines = [
-        "<b>🔔 Новый пользователь бота</b>",
-        "",
-      ];
-      if (firstName || lastName) lines.push(`<b>Имя:</b> ${escapeHtml([firstName, lastName].filter(Boolean).join(" "))}`);
+      const lines = ["<b>🔔 Новый пользователь бота</b>", ""];
+      if (firstName || lastName)
+        lines.push(
+          `<b>Имя:</b> ${escapeHtml([firstName, lastName].filter(Boolean).join(" "))}`,
+        );
       if (username) lines.push(`<b>Username:</b> @${escapeHtml(username)}`);
       lines.push(`<b>Chat ID:</b> ${chatId}`);
       lines.push(

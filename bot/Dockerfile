@@ -2,7 +2,6 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# uv для быстрой установки зависимостей
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 COPY pyproject.toml .

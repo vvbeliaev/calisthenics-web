@@ -1,14 +1,17 @@
 """Менеджерский контур: уведомления и ручное управление доступом."""
 
 import logging
+import re
 
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Message
 
 from config import settings
 from db import repo
 from services import channels
+
+_USER_ID_RE = re.compile(r"#id(\d+)")
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +20,14 @@ def register_admin_handlers(dp: Dispatcher) -> None:
     dp.message.register(admin_grant, Command("admin_grant"))
     dp.message.register(admin_revoke, Command("admin_revoke"))
     dp.message.register(admin_list, Command("admin_list"))
+    # Ответ админа на переадресованное сообщение → отправить юзеру
+    dp.message.register(
+        admin_reply_to_user,
+        F.from_user.id == settings.ADMIN_ID,
+        F.reply_to_message,
+        F.text,
+        ~F.text.startswith("/"),
+    )
 
 
 def _is_admin(msg: Message) -> bool:
@@ -110,6 +121,28 @@ async def _get_active_subs() -> list[dict]:
             "SELECT * FROM subscriptions WHERE status = 'active' ORDER BY active_until"
         ) as cur:
             return [dict(r) for r in await cur.fetchall()]
+
+
+async def admin_reply_to_user(msg: Message, bot: Bot) -> None:
+    """Отправляет ответ админа пользователю, чьё сообщение было переадресовано."""
+    original_text = msg.reply_to_message.text or ""
+    match = _USER_ID_RE.search(original_text)
+
+    if not match:
+        await msg.answer("⚠️ Не найден #id — не могу определить получателя.")
+        return
+
+    target_id = int(match.group(1))
+    try:
+        await bot.send_message(
+            target_id,
+            f"📩 <b>Ответ от тренера:</b>\n\n{msg.html_text}",
+            parse_mode="HTML",
+        )
+        await msg.answer(f"✅ Доставлено пользователю {target_id}")
+    except Exception as e:
+        logger.error("Не удалось доставить ответ пользователю %s: %s", target_id, e)
+        await msg.answer(f"❌ Ошибка доставки: {e}")
 
 
 async def notify_admin(bot: Bot, tg_id: int, product: dict, amount: str, order_id: str) -> None:

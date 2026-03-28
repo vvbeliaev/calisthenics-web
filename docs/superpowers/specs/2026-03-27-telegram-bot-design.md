@@ -1,4 +1,5 @@
 # Telegram Bot — Design Spec
+
 **Date:** 2026-03-27
 **Project:** Caliathletics
 **Status:** Approved
@@ -14,27 +15,30 @@ Telegram-бот для монетизации приватных каналов.
 ## Контуры системы
 
 ### 1. Клиентский контур
+
 Пользователь открывает бота → видит каталог продуктов (inline-кнопки) → получает ссылку на оплату Prodamus → оплачивает (Prodamus собирает контакты сам) → получает одноразовую ссылку-приглашение в канал + беседу.
 
 ### 2. Контур доступа к каналам
+
 Бот является администратором в каждом приватном канале и прикреплённой беседе. После успешной оплаты генерирует одноразовую invite-ссылку (`createChatInviteLink`, `member_limit=1`). При истечении подписки или неудачном рекуррентном платеже — кикает пользователя (`banChatMember` + немедленный `unbanChatMember` чтобы разрешить вернуться в будущем).
 
 ### 3. Менеджерский контур
+
 Пользователь с `ADMIN_ID` получает уведомления о каждой новой оплате. Может вручную выдавать и отзывать доступ через команды `/admin_grant` и `/admin_revoke`.
 
 ---
 
 ## Технический стек
 
-| Компонент | Выбор |
-|-----------|-------|
-| Telegram-клиент | aiogram 3 |
-| HTTP-сервер (webhooks) | FastAPI |
-| База данных | SQLite через aiosqlite |
-| Планировщик задач | APScheduler (AsyncIOScheduler) |
-| Запуск | uvicorn, бот в polling-режиме через `lifespan` |
-| Python | 3.13+ |
-| Пакетный менеджер | uv (через pyproject.toml) |
+| Компонент              | Выбор                                          |
+| ---------------------- | ---------------------------------------------- |
+| Telegram-клиент        | aiogram 3                                      |
+| HTTP-сервер (webhooks) | FastAPI                                        |
+| База данных            | SQLite через aiosqlite                         |
+| Планировщик задач      | APScheduler (AsyncIOScheduler)                 |
+| Запуск                 | uvicorn, бот в polling-режиме через `lifespan` |
+| Python                 | 3.13+                                          |
+| Пакетный менеджер      | uv (через pyproject.toml)                      |
 
 > SQLite выбран как простое и надёжное решение для текущего масштаба. Легко мигрировать на Postgres при необходимости (достаточно поменять aiosqlite на asyncpg в `db/repo.py`).
 
@@ -120,12 +124,14 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 ```
 
 **Жизненный цикл статуса:**
+
 - `pending` — создаётся когда пользователь нажимает "Купить" (клик по inline-кнопке продукта)
 - `active` — переходит при успешном webhook от Prodamus, `active_until` заполняется
 - `expired` — APScheduler переводит когда `active_until < now()`
 - `cancelled` — Prodamus прислал webhook с неудачным платежом
 
 **Воронка из одного запроса:**
+
 ```sql
 SELECT
     (SELECT COUNT(*) FROM users)                                        AS total_leads,
@@ -187,6 +193,7 @@ POST /payment/webhook?tg_id=X&product_id=Y
 **Успешный рекуррентный платёж** → тот же `POST /payment/webhook` со статусом `success` → продление `active_until += 30 дней`.
 
 **Неудачный платёж** → Prodamus шлёт webhook со статусом `fail` →
+
 ```
 webhooks/prodamus.py
   └─→ db/repo.py::set_subscription_status(tg_id, product_id, "cancelled")
@@ -199,6 +206,7 @@ webhooks/prodamus.py
 ```
 
 **APScheduler (каждый час)** — страховочный механизм:
+
 ```
 scheduler/jobs.py::check_expired_subscriptions()
   └─→ db/repo.py::get_expired_active_subscriptions()
@@ -213,13 +221,14 @@ scheduler/jobs.py::check_expired_subscriptions()
 
 Все команды доступны только при `message.from_user.id == ADMIN_ID`.
 
-| Команда | Действие |
-|---------|----------|
-| `/admin_grant {tg_id} {product_id}` | Выдать доступ вручную (active_until = now + 30 дней) |
-| `/admin_revoke {tg_id} {product_id}` | Отозвать доступ вручную |
-| `/admin_list` | Список активных подписок (текстом) |
+| Команда                              | Действие                                             |
+| ------------------------------------ | ---------------------------------------------------- |
+| `/admin_grant {tg_id} {product_id}`  | Выдать доступ вручную (active_until = now + 30 дней) |
+| `/admin_revoke {tg_id} {product_id}` | Отозвать доступ вручную                              |
+| `/admin_list`                        | Список активных подписок (текстом)                   |
 
 Уведомление при каждой оплате:
+
 ```
 💰 Новая оплата!
 Пользователь: @username (tg_id)

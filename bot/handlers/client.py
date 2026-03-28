@@ -36,6 +36,14 @@ WELCOME_TEXT = (
 def register_client_handlers(dp: Dispatcher) -> None:
     dp.message.register(cmd_start, Command("start"))
     dp.callback_query.register(cb_relink, F.data.startswith("relink:"))
+    dp.callback_query.register(cb_test_grant, F.data.startswith("test_grant:"))
+    # Catch-all: любое текстовое сообщение не от админа и не команда
+    dp.message.register(
+        user_message_to_admin,
+        F.text,
+        ~F.text.startswith("/"),
+        F.from_user.id != settings.ADMIN_ID,
+    )
 
 
 async def cmd_start(msg: Message) -> None:
@@ -61,6 +69,12 @@ async def cmd_start(msg: Message) -> None:
             buttons.append([InlineKeyboardButton(
                 text=f"🔗 Получить ссылку — {p['name']}",
                 callback_data=f"relink:{p['product_id']}",
+            )])
+        elif settings.TEST_MODE:
+            # Тестовый режим: показываем кнопку, подписка выдаётся только при клике
+            buttons.append([InlineKeyboardButton(
+                text=f"🧪 Тест — {p['name']}",
+                callback_data=f"test_grant:{p['product_id']}",
             )])
         else:
             # Сразу генерируем URL и создаём pending для воронки
@@ -99,6 +113,55 @@ async def cmd_start(msg: Message) -> None:
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
         )
+
+
+async def user_message_to_admin(msg: Message, bot: Bot) -> None:
+    """Пересылает текстовое сообщение пользователя админу."""
+    user = msg.from_user
+    name = user.full_name or "Неизвестный"
+    username_part = f"@{user.username}" if user.username else "без @"
+
+    await bot.send_message(
+        settings.ADMIN_ID,
+        f"💬 {name} ({username_part}) #id{user.id}\n"
+        f"{'─' * 20}\n"
+        f"{msg.text}",
+    )
+    await msg.answer("✉️ Сообщение отправлено тренеру. Ожидайте ответа.")
+
+
+async def cb_test_grant(call: CallbackQuery, bot: Bot) -> None:
+    """TEST_MODE: выдаёт активную подписку и сразу возвращает ссылки."""
+    product_id = call.data.split(":", 1)[1]
+    product = await repo.get_product(product_id, settings.DB_PATH)
+
+    if not product:
+        await call.answer("Продукт не найден", show_alert=True)
+        return
+
+    await repo.upsert_subscription(
+        telegram_id=call.from_user.id,
+        product_id=product_id,
+        status="active",
+        db_path=settings.DB_PATH,
+    )
+    logger.info("TEST_MODE: granted subscription %s to user %s", product_id, call.from_user.id)
+
+    try:
+        channel_link, discussion_link = await channels.grant_access(bot, call.from_user.id, product)
+    except Exception as e:
+        logger.error("TEST_MODE grant_access failed: %s", e)
+        await call.answer(f"Ошибка создания ссылки: {e}", show_alert=True)
+        return
+
+    await call.message.answer(
+        f"🧪 <b>TEST MODE — «{product['name']}»</b>\n\n"
+        f"Канал: {channel_link}\n"
+        f"Беседа: {discussion_link}\n\n"
+        "<i>Ссылки одноразовые, действуют 7 дней. Кликни чтобы вступить.</i>",
+        parse_mode="HTML",
+    )
+    await call.answer()
 
 
 async def cb_relink(call: CallbackQuery, bot: Bot) -> None:
