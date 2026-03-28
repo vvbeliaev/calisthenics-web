@@ -1,0 +1,14 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    environment:
+      - WEBHOOK_BASE_URL=${WEBHOOK_BASE_URL:-https://heartpath.cogisoft.dev/}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - ADMIN_ID=${ADMIN_ID}
+      - PRODAMUS_SECRET=${PRODAMUS_SECRET}
+      - TEST_MODE=${TEST_MODE:-false}
+      - WELCOME_PHOTO=${WELCOME_PHOTO:-}
+      - DB_PATH=${DB_PATH:-/data/subscribers.db}
