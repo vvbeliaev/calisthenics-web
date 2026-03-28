@@ -145,3 +145,105 @@ async def get_expired_active_subscriptions(db_path: str) -> list[dict]:
         """) as cur:
             rows = await cur.fetchall()
             return [dict(r) for r in rows]
+
+
+# ─── admin queries ────────────────────────────────────────────────────────────
+
+async def get_active_subscriptions(db_path: str) -> list[dict]:
+    """Active subscriptions joined with user info, ordered by active_until.
+
+    Replaces the internal _get_active_subs hack from the old admin handler.
+    """
+    async with aiosqlite.connect(db_path) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT s.*, u.username, u.first_name
+            FROM subscriptions s
+            LEFT JOIN users u USING (telegram_id)
+            WHERE s.status = 'active'
+            ORDER BY s.active_until
+        """) as cur:
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+
+async def get_stats(db_path: str) -> dict:
+    """Aggregate counts for /admin_stats dashboard."""
+    async with aiosqlite.connect(db_path) as db:
+        async with db.execute("SELECT COUNT(*) FROM users") as cur:
+            total_users: int = (await cur.fetchone())[0]
+        async with db.execute(
+            "SELECT COUNT(*) FROM subscriptions WHERE status = 'active'"
+        ) as cur:
+            active: int = (await cur.fetchone())[0]
+        async with db.execute(
+            "SELECT COUNT(*) FROM subscriptions WHERE status = 'pending'"
+        ) as cur:
+            pending: int = (await cur.fetchone())[0]
+        async with db.execute(
+            "SELECT COUNT(*) FROM subscriptions WHERE status IN ('expired', 'cancelled')"
+        ) as cur:
+            expired_cancelled: int = (await cur.fetchone())[0]
+        async with db.execute(
+            "SELECT COUNT(*) FROM subscriptions "
+            "WHERE status = 'active' AND active_until < datetime('now', '+7 days')"
+        ) as cur:
+            expiring_7d: int = (await cur.fetchone())[0]
+    return {
+        "total_users": total_users,
+        "active": active,
+        "pending": pending,
+        "expired_cancelled": expired_cancelled,
+        "expiring_7d": expiring_7d,
+    }
+
+
+async def get_expiring_subscriptions(db_path: str, days: int) -> list[dict]:
+    """Active subscriptions expiring within `days` days, joined with user and product info."""
+    async with aiosqlite.connect(db_path) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT s.telegram_id, s.product_id, s.active_until,
+                   u.username, u.first_name, p.name AS product_name
+            FROM subscriptions s
+            LEFT JOIN users u USING (telegram_id)
+            LEFT JOIN products p USING (product_id)
+            WHERE s.status = 'active'
+              AND s.active_until < datetime('now', '+' || ? || ' days')
+            ORDER BY s.active_until
+        """, (str(days),)) as cur:
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+
+async def find_user(db_path: str, query: str) -> dict | None:
+    """Find a user by @username, username (without @), or numeric tg_id.
+
+    Returns the user row extended with a 'subscriptions' list, or None.
+    Each subscription item includes: product_id, name, status, active_until.
+    """
+    clean = query.lstrip("@").strip()
+    async with aiosqlite.connect(db_path) as db:
+        db.row_factory = aiosqlite.Row
+        if clean.isdigit():
+            async with db.execute(
+                "SELECT * FROM users WHERE telegram_id = ?", (int(clean),)
+            ) as cur:
+                row = await cur.fetchone()
+        else:
+            async with db.execute(
+                "SELECT * FROM users WHERE username = ?", (clean,)
+            ) as cur:
+                row = await cur.fetchone()
+        if row is None:
+            return None
+        user = dict(row)
+        async with db.execute("""
+            SELECT s.product_id, s.status, s.active_until, p.name
+            FROM subscriptions s
+            LEFT JOIN products p USING (product_id)
+            WHERE s.telegram_id = ?
+        """, (user["telegram_id"],)) as cur:
+            subs = await cur.fetchall()
+        user["subscriptions"] = [dict(s) for s in subs]
+        return user
