@@ -44,10 +44,35 @@ async def cmd_start(msg: Message, app: AppContext) -> None:
 
     subs = await subscriptions.get_user_subs(app, msg.from_user.id)
     sub_map = {s["product_id"]: s for s in subs}
-    kb = keyboards.start_kb(
-        products, sub_map, settings.TEST_MODE,
-        msg.from_user.id, settings.WEBHOOK_BASE_URL, settings.PRODAMUS_SECRET,
-    )
+
+    pay_urls: dict[str, str] = {}
+    if not settings.TEST_MODE:
+        from services.prodamus import build_payment_url
+        import asyncio
+        results = await asyncio.gather(
+            *[
+                build_payment_url(
+                    tg_id=msg.from_user.id,
+                    product=p,
+                    webhook_base_url=settings.WEBHOOK_BASE_URL,
+                    secret=settings.PRODAMUS_SECRET,
+                )
+                for p in products
+                if sub_map.get(p["product_id"], {}).get("status") != "active"
+            ],
+            return_exceptions=True,
+        )
+        non_active = [
+            p for p in products
+            if sub_map.get(p["product_id"], {}).get("status") != "active"
+        ]
+        for p, result in zip(non_active, results):
+            if isinstance(result, str):
+                pay_urls[p["product_id"]] = result
+            else:
+                logger.warning("Failed to get payment URL for %s: %s", p["product_id"], result)
+
+    kb = keyboards.start_kb(products, sub_map, settings.TEST_MODE, pay_urls)
 
     if msg.from_user.id == settings.ADMIN_ID:
         await msg.answer("🔧 Панель администратора", reply_markup=keyboards.admin_panel_kb())

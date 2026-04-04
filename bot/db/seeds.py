@@ -15,7 +15,7 @@ PRODUCTS_TEST = [
         "channel_id": -1003475480396,
         "discussion_id": -1003847085264,
         "prodamus_url": "https://heartpath.payform.ru/",
-        "price": 2500,
+        "price": 1,
     },
     {
         "product_id": "intermediate",
@@ -24,7 +24,7 @@ PRODUCTS_TEST = [
         "channel_id": -1003802167188,
         "discussion_id": -5184619005,
         "prodamus_url": "https://heartpath.payform.ru/",
-        "price": 2500,
+        "price": 50,
     },
 ]
 

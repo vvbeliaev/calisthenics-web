@@ -35,13 +35,12 @@ def start_kb(
     products: list[dict],
     sub_map: dict,
     test_mode: bool,
-    tg_id: int,
-    webhook_base_url: str,
-    prodamus_secret: str,
+    pay_urls: dict[str, str],
 ) -> InlineKeyboardMarkup:
-    """Build the /start catalog keyboard depending on subscription state."""
-    from services.prodamus import build_payment_url
+    """Build the /start catalog keyboard depending on subscription state.
 
+    pay_urls: product_id → ready payment URL (pre-fetched by cmd_start).
+    """
     buttons: list[list[InlineKeyboardButton]] = []
     for p in products:
         sub = sub_map.get(p["product_id"])
@@ -58,12 +57,7 @@ def start_kb(
                 callback_data=f"test_grant:{p['product_id']}",
             )])
         else:
-            pay_url = build_payment_url(
-                tg_id=tg_id,
-                product=p,
-                webhook_base_url=webhook_base_url,
-                secret=prodamus_secret,
-            )
+            pay_url = pay_urls.get(p["product_id"], "")
             verb = "🔄" if status in ("expired", "cancelled") else "💳"
             buttons.append([InlineKeyboardButton(
                 text=f"{verb} Оформить подписку — {p['name']} ({p['price']} ₽/мес)",
