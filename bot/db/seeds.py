@@ -29,15 +29,6 @@ PRODUCTS_TEST = [
 ]
 
 PRODUCTS_BASE = [
-    # {
-    #     "product_id": "base",
-    #     "name": "База",
-    #     "description": "Базовая программа для начинающих. 8 уровней, 28 упражнений.",
-    #     "channel_id": -1003797840314,
-    #     "discussion_id": -1003829594565,
-    #     "prodamus_url": "https://heartpath.payform.ru/",
-    #     "price": 2500,
-    # },
     {
         "product_id": "base",
         "name": "База",
@@ -45,7 +36,7 @@ PRODUCTS_BASE = [
         "channel_id": -1003797840314,
         "discussion_id": -1003829594565,
         "prodamus_url": "https://heartpath.payform.ru/",
-        "price": 50,
+        "price": 2500,
     },
 ]
 
