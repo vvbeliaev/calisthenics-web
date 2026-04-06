@@ -1,0 +1,79 @@
+{% extends "admin/base.html" %}
+{% block title %}Подписки{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Подписки</h1>
+  <span class="subtitle">{{ subs | length }} записей</span>
+</div>
+
+<div class="table-wrap">
+  <div class="table-toolbar">
+    <span class="table-title">Все подписки</span>
+    <div class="flex items-center gap-3">
+      <form method="GET" action="/admin/subscriptions">
+        <select name="status" class="select" onchange="this.form.submit()">
+          <option value="" {% if not status_filter %}selected{% endif %}>Все статусы</option>
+          <option value="active"    {% if status_filter == 'active' %}selected{% endif %}>active</option>
+          <option value="pending"   {% if status_filter == 'pending' %}selected{% endif %}>pending</option>
+          <option value="expired"   {% if status_filter == 'expired' %}selected{% endif %}>expired</option>
+          <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>cancelled</option>
+        </select>
+      </form>
+    </div>
+  </div>
+
+  {% if subs %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Telegram ID</th>
+        <th>Пользователь</th>
+        <th>Продукт</th>
+        <th>Статус</th>
+        <th>Активна до</th>
+        <th>Order ID</th>
+        <th>Обновлено</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in subs %}
+      <tr>
+        <td class="td-mono td-muted">{{ s.id }}</td>
+        <td class="td-mono">{{ s.telegram_id }}</td>
+        <td>
+          {% if s.username %}<span style="color:var(--orange)">@{{ s.username }}</span>{% else %}<span class="td-muted">—</span>{% endif %}
+          {% if s.first_name %}<span class="td-muted"> {{ s.first_name }}</span>{% endif %}
+        </td>
+        <td>{{ s.product_name or s.product_id }}</td>
+        <td><span class="badge badge-{{ s.status }}">{{ s.status }}</span></td>
+        <td class="td-mono {% if s.status == 'active' %}{% else %}td-muted{% endif %}">
+          {{ s.active_until[:10] if s.active_until else '—' }}
+        </td>
+        <td class="td-mono td-muted" style="font-size:11px">{{ (s.order_id or '—')[:12] }}</td>
+        <td class="td-mono td-muted">{{ s.updated_at[:10] if s.updated_at else '—' }}</td>
+        <td>
+          <form method="POST" action="/admin/subscriptions/{{ s.id }}/status" style="display:inline-flex;gap:4px">
+            {% if s.status != 'active' %}
+            <input type="hidden" name="new_status" value="active">
+            <button type="submit" class="btn btn-xs" style="background:rgba(46,204,113,0.15);color:var(--green);border:1px solid rgba(46,204,113,0.3)">▲ active</button>
+            </form>
+            <form method="POST" action="/admin/subscriptions/{{ s.id }}/status" style="display:inline-flex;gap:4px">
+            {% endif %}
+            {% if s.status != 'cancelled' %}
+            <input type="hidden" name="new_status" value="cancelled">
+            <button type="submit" class="btn btn-xs btn-danger">✕ cancel</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">Нет подписок{% if status_filter %} со статусом «{{ status_filter }}»{% endif %}</div>
+  {% endif %}
+</div>
+{% endblock %}

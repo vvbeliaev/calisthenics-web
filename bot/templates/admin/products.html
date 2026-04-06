@@ -1,0 +1,101 @@
+{% extends "admin/base.html" %}
+{% block title %}Продукты{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Продукты</h1>
+  <span class="subtitle">{{ products | length }} записей</span>
+</div>
+
+{% if msg == 'created' %}<div class="alert alert-success">✓ Продукт создан</div>{% endif %}
+{% if msg == 'updated' %}<div class="alert alert-success">✓ Продукт обновлён</div>{% endif %}
+{% if msg == 'deleted' %}<div class="alert alert-success">✓ Продукт удалён</div>{% endif %}
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+<div class="table-wrap" style="margin-bottom:32px">
+  <div class="table-toolbar">
+    <span class="table-title">Список продуктов</span>
+  </div>
+  {% if products %}
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Название</th>
+        <th>Цена</th>
+        <th>Channel ID</th>
+        <th>Discussion ID</th>
+        <th>Prodamus URL</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in products %}
+      <tr>
+        <td class="td-mono" style="color:var(--orange)">{{ p.product_id }}</td>
+        <td>
+          <div>{{ p.name }}</div>
+          {% if p.description %}<div class="td-muted" style="font-size:11px;font-family:var(--mono);margin-top:2px">{{ p.description }}</div>{% endif %}
+        </td>
+        <td class="td-mono">{{ p.price }} ₽</td>
+        <td class="td-mono td-muted" style="font-size:11px">{{ p.channel_id }}</td>
+        <td class="td-mono td-muted" style="font-size:11px">{{ p.discussion_id }}</td>
+        <td class="td-mono td-muted" style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.prodamus_url }}</td>
+        <td style="white-space:nowrap">
+          <a href="/admin/products/{{ p.product_id }}/edit" class="btn btn-ghost btn-xs" style="margin-right:4px">✎ Edit</a>
+          <form method="POST" action="/admin/products/{{ p.product_id }}/delete" style="display:inline"
+                onsubmit="return confirm('Удалить продукт {{ p.product_id }}?')">
+            <button type="submit" class="btn btn-danger btn-xs">✕</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">Нет продуктов</div>
+  {% endif %}
+</div>
+
+<!-- Add product form -->
+<div class="section-title">Добавить продукт</div>
+<div class="table-wrap">
+  <div style="padding:24px">
+    <form method="POST" action="/admin/products">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>product_id</label>
+          <input type="text" name="product_id" class="input" placeholder="beginner" required>
+        </div>
+        <div class="form-field">
+          <label>Название</label>
+          <input type="text" name="name" class="input" placeholder="Начинающий" required>
+        </div>
+        <div class="form-field full">
+          <label>Описание</label>
+          <input type="text" name="description" class="input" placeholder="Базовая программа…">
+        </div>
+        <div class="form-field">
+          <label>Channel ID</label>
+          <input type="number" name="channel_id" class="input" placeholder="-1001234567890" required>
+        </div>
+        <div class="form-field">
+          <label>Discussion ID</label>
+          <input type="number" name="discussion_id" class="input" placeholder="-1001234567890" required>
+        </div>
+        <div class="form-field full">
+          <label>Prodamus URL</label>
+          <input type="url" name="prodamus_url" class="input" placeholder="https://..." required>
+        </div>
+        <div class="form-field">
+          <label>Цена (₽)</label>
+          <input type="number" name="price" class="input" placeholder="2500" required min="0">
+        </div>
+        <div class="form-field" style="justify-content:flex-end">
+          <button type="submit" class="btn btn-primary">+ Создать продукт</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

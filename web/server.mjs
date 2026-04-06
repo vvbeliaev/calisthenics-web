@@ -2,7 +2,7 @@ import http from "node:http";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import sirv from "sirv";
-import { handler as astroHandler } from "./dist/server/entry.mjs";
+import { handler as astroHandler } from "../dist/server/entry.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

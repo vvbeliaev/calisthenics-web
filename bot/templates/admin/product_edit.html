@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+{% block title %}Редактировать {{ product.product_id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Редактировать продукт</h1>
+  <span class="subtitle">{{ product.product_id }}</span>
+</div>
+
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+<div class="table-wrap">
+  <div style="padding:24px">
+    <form method="POST" action="/admin/products/{{ product.product_id }}/edit">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>product_id</label>
+          <input type="text" class="input" value="{{ product.product_id }}" disabled style="opacity:0.5;cursor:not-allowed">
+        </div>
+        <div class="form-field">
+          <label>Название</label>
+          <input type="text" name="name" class="input" value="{{ product.name }}" required>
+        </div>
+        <div class="form-field full">
+          <label>Описание</label>
+          <input type="text" name="description" class="input" value="{{ product.description or '' }}">
+        </div>
+        <div class="form-field">
+          <label>Channel ID</label>
+          <input type="number" name="channel_id" class="input" value="{{ product.channel_id }}" required>
+        </div>
+        <div class="form-field">
+          <label>Discussion ID</label>
+          <input type="number" name="discussion_id" class="input" value="{{ product.discussion_id }}" required>
+        </div>
+        <div class="form-field full">
+          <label>Prodamus URL</label>
+          <input type="url" name="prodamus_url" class="input" value="{{ product.prodamus_url }}" required>
+        </div>
+        <div class="form-field">
+          <label>Цена (₽)</label>
+          <input type="number" name="price" class="input" value="{{ product.price }}" required min="0">
+        </div>
+        <div class="form-field" style="justify-content:flex-end;flex-direction:row;align-items:flex-end;gap:8px">
+          <a href="/admin/products" class="btn btn-ghost">Отмена</a>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

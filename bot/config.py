@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     DB_PATH: str = "subscribers.db"
     WELCOME_PHOTO: str = ""  # file_id или URL картинки для /start (пусто = без фото)
     TEST_MODE: bool = False
+    ADMIN_PASSWORD: str = ""  # пусто — веб-админка отключена
 
 
 settings = Settings()  # type: ignore[call-arg]

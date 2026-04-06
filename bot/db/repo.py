@@ -158,6 +158,42 @@ async def set_subscription_status(
         await db.commit()
 
 
+async def create_product(db_path: str, data: dict) -> None:
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            """
+            INSERT INTO products (product_id, name, description, channel_id, discussion_id, prodamus_url, price)
+            VALUES (:product_id, :name, :description, :channel_id, :discussion_id, :prodamus_url, :price)
+        """,
+            data,
+        )
+        await db.commit()
+
+
+async def update_product(db_path: str, product_id: str, data: dict) -> None:
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            """
+            UPDATE products SET
+                name          = :name,
+                description   = :description,
+                channel_id    = :channel_id,
+                discussion_id = :discussion_id,
+                prodamus_url  = :prodamus_url,
+                price         = :price
+            WHERE product_id = :product_id
+        """,
+            {**data, "product_id": product_id},
+        )
+        await db.commit()
+
+
+async def delete_product(db_path: str, product_id: str) -> None:
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute("DELETE FROM products WHERE product_id = ?", (product_id,))
+        await db.commit()
+
+
 async def get_expired_active_subscriptions(db_path: str) -> list[dict]:
     """Активные подписки с истёкшим active_until — для APScheduler."""
     async with aiosqlite.connect(db_path) as db:

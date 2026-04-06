@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin{% endblock %} — Caliathletics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #06100f;
+      --surface:     #0c1e1b;
+      --surface-2:   #122520;
+      --border:      rgba(255,255,255,0.07);
+      --border-2:    rgba(255,255,255,0.12);
+      --text:        #f0f4f3;
+      --muted:       rgba(240,244,243,0.45);
+      --orange:      #ff8400;
+      --gold:        #ffd500;
+      --green:       #2ecc71;
+      --red:         #e74c3c;
+      --yellow:      #f39c12;
+      --blue:        #3498db;
+      --mono:        'JetBrains Mono', ui-monospace, monospace;
+      --sans:        'Syne', system-ui, sans-serif;
+      --radius:      6px;
+      --sidebar-w:   220px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Sidebar ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .brand {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--orange), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .sidebar-logo .label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      font-family: var(--mono);
+    }
+
+    .nav { padding: 12px 0; flex: 1; }
+
+    .nav-section {
+      padding: 16px 20px 6px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      font-size: 13.5px;
+      color: var(--muted);
+      transition: color 0.15s, background 0.15s;
+      border-radius: 0;
+    }
+    .nav a:hover { color: var(--text); background: var(--surface-2); }
+    .nav a.active { color: var(--orange); background: rgba(255,132,0,0.08); }
+    .nav a .icon { width: 16px; text-align: center; font-size: 14px; opacity: 0.7; }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-footer a {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.15s;
+    }
+    .sidebar-footer a:hover { color: var(--red); }
+
+    /* ── Main ── */
+    .main { flex: 1; min-width: 0; padding: 32px 36px; }
+
+    .page-header {
+      margin-bottom: 28px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .page-header .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    /* ── Cards ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-label {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--mono);
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .card-value.orange { color: var(--orange); }
+    .card-value.green  { color: var(--green); }
+    .card-value.yellow { color: var(--yellow); }
+    .card-value.red    { color: var(--red); }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .table-toolbar {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .table-title {
+      font-size: 13px;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+    thead th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody td { padding: 10px 16px; vertical-align: middle; }
+    .td-muted { color: var(--muted); }
+    .td-mono { font-family: var(--mono); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--mono);
+      letter-spacing: 0.04em;
+    }
+    .badge-active    { background: rgba(46,204,113,0.15); color: var(--green); }
+    .badge-pending   { background: rgba(243,156,18,0.15); color: var(--yellow); }
+    .badge-expired   { background: rgba(231,76,60,0.12);  color: var(--red); }
+    .badge-cancelled { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+    /* ── Forms / Inputs ── */
+    .input, .select {
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 8px 12px;
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .input:focus, .select:focus { border-color: var(--orange); }
+    .input::placeholder { color: var(--muted); }
+
+    .input-group { display: flex; gap: 8px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; font-family: var(--mono); }
+    .form-field .input { width: 100%; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, filter 0.15s;
+      font-family: var(--sans);
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .btn-primary { background: var(--orange); color: #000; }
+    .btn-ghost   { background: transparent; border: 1px solid var(--border-2); color: var(--text); }
+    .btn-danger  { background: rgba(231,76,60,0.15); color: var(--red); border: 1px solid rgba(231,76,60,0.3); }
+    .btn-sm      { padding: 5px 10px; font-size: 12px; }
+    .btn-xs      { padding: 3px 8px; font-size: 11px; }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      margin-bottom: 16px;
+      font-family: var(--mono);
+    }
+    .alert-success { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.25); color: var(--green); }
+    .alert-error   { background: rgba(231,76,60,0.1);  border: 1px solid rgba(231,76,60,0.25); color: var(--red); }
+
+    /* ── Misc ── */
+    .empty {
+      padding: 48px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+
+    .mt-6  { margin-top: 24px; }
+    .mt-8  { margin-top: 32px; }
+    .gap-3 { gap: 12px; }
+    .flex  { display: flex; }
+    .items-center { align-items: center; }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">Caliathletics</div>
+      <div class="label">admin panel</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Обзор</div>
+      <a href="/admin/" class="{% if active == 'dashboard' %}active{% endif %}">
+        <span class="icon">◈</span> Dashboard
+      </a>
+      <div class="nav-section">Данные</div>
+      <a href="/admin/users" class="{% if active == 'users' %}active{% endif %}">
+        <span class="icon">◉</span> Пользователи
+      </a>
+      <a href="/admin/subscriptions" class="{% if active == 'subscriptions' %}active{% endif %}">
+        <span class="icon">◎</span> Подписки
+      </a>
+      <a href="/admin/products" class="{% if active == 'products' %}active{% endif %}">
+        <span class="icon">▣</span> Продукты
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/admin/logout">⏻ Выйти</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

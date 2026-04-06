@@ -23,6 +23,7 @@ from aiogram.types import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request, Response
 
+from app.admin_ui import router as admin_ui_router
 from app.context import AppContext
 from config import settings
 from db.init import init_tables
@@ -125,6 +126,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Caliathletics Bot", lifespan=lifespan)
 app.include_router(payment_router)
+app.include_router(admin_ui_router)
 
 
 @app.post("/bot/webhook")

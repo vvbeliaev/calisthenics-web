@@ -1,0 +1,61 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <span class="subtitle">обзор системы</span>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="card-label">Пользователей</div>
+    <div class="card-value orange">{{ stats.total_users }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Активных подписок</div>
+    <div class="card-value green">{{ stats.active }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Истекает за 3 дня</div>
+    <div class="card-value yellow">{{ stats.expiring_3d }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Истекло / Отменено</div>
+    <div class="card-value red">{{ stats.expired_cancelled }}</div>
+  </div>
+</div>
+
+{% if expiring %}
+<div class="section-title">Истекают в ближайшие 3 дня</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Telegram ID</th>
+        <th>Пользователь</th>
+        <th>Продукт</th>
+        <th>Истекает</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in expiring %}
+      <tr>
+        <td class="td-mono">{{ s.telegram_id }}</td>
+        <td>
+          {% if s.username %}<span>@{{ s.username }}</span>{% else %}<span class="td-muted">—</span>{% endif %}
+          {% if s.first_name %}<span class="td-muted"> · {{ s.first_name }}</span>{% endif %}
+        </td>
+        <td>{{ s.product_name or s.product_id }}</td>
+        <td class="td-mono" style="color:var(--yellow)">{{ s.active_until[:10] if s.active_until else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="table-wrap">
+  <div class="empty">Нет подписок, истекающих в ближайшие 3 дня ✓</div>
+</div>
+{% endif %}
+{% endblock %}
