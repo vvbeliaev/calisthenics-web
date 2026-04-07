@@ -33,10 +33,17 @@ async def revoke_access(bot: Bot, telegram_id: int, product: dict) -> None:
     """Кикает пользователя из канала и беседы.
 
     После ban сразу unban — чтобы пользователь мог вернуться по новой ссылке.
+    unban в отдельном try, чтобы юзер не остался забанен навсегда при ошибке.
     """
     for chat_id in (product["channel_id"], product["discussion_id"]):
         try:
-            await bot.ban_chat_member(chat_id=chat_id, user_id=telegram_id)
+            await bot.ban_chat_member(
+                chat_id=chat_id, user_id=telegram_id, revoke_messages=False,
+            )
+        except Exception as e:
+            logger.warning("ban chat=%s user=%s: %s", chat_id, telegram_id, e)
+            continue
+        try:
             await bot.unban_chat_member(chat_id=chat_id, user_id=telegram_id)
         except Exception as e:
-            logger.warning("revoke_access chat=%s user=%s: %s", chat_id, telegram_id, e)
+            logger.error("unban failed chat=%s user=%s: %s", chat_id, telegram_id, e)

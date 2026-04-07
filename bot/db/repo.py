@@ -200,7 +200,7 @@ async def delete_product(db_path: str, product_id: str) -> None:
 
 
 async def get_expired_active_subscriptions(db_path: str) -> list[dict]:
-    """Активные подписки с истёкшим active_until — для APScheduler."""
+    """Active subs past active_until + 2-day grace period (for Prodamus rebill lag)."""
     async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
@@ -208,7 +208,7 @@ async def get_expired_active_subscriptions(db_path: str) -> list[dict]:
             SELECT s.*, p.channel_id, p.discussion_id, p.name AS product_name
             FROM subscriptions s
             JOIN products p USING (product_id)
-            WHERE s.status = 'active' AND s.active_until < datetime('now')
+            WHERE s.status = 'active' AND s.active_until < datetime('now', '-2 days')
         """
         ) as cur:
             rows = await cur.fetchall()
