@@ -2,18 +2,18 @@
 {% block title %}Пользователи{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h1>Пользователи</h1>
-  <span class="subtitle">{{ users | length }} записей</span>
+<div class="page-head">
+  <h1>ПОЛЬЗОВАТЕЛИ</h1>
+  <span class="tag">{{ users | length }} записей</span>
 </div>
 
-<div class="table-wrap">
-  <div class="table-toolbar">
-    <span class="table-title">Все пользователи</span>
-    <form method="GET" action="/admin/users" class="input-group">
+<div class="tbl-wrap">
+  <div class="tbl-bar">
+    <span class="tbl-title">Все пользователи</span>
+    <form method="GET" action="/admin/users" class="input-row">
       <input type="text" name="q" value="{{ q }}" class="input" placeholder="@username или tg_id" style="width:220px">
       <button type="submit" class="btn btn-ghost btn-sm">Найти</button>
-      {% if q %}<a href="/admin/users" class="btn btn-ghost btn-sm">✕ Сброс</a>{% endif %}
+      {% if q %}<a href="/admin/users" class="btn btn-ghost btn-sm">Сброс</a>{% endif %}
     </form>
   </div>
 
@@ -32,17 +32,17 @@
     <tbody>
       {% for u in users %}
       <tr>
-        <td class="td-mono">{{ u.telegram_id }}</td>
-        <td>{% if u.username %}<span style="color:var(--orange)">@{{ u.username }}</span>{% else %}<span class="td-muted">—</span>{% endif %}</td>
+        <td>{{ u.telegram_id }}</td>
+        <td>{% if u.username %}<span style="color:var(--accent)">@{{ u.username }}</span>{% else %}<span class="dim">—</span>{% endif %}</td>
         <td>{{ u.first_name or '—' }}</td>
-        <td class="td-mono td-muted">{{ u.first_seen[:10] if u.first_seen else '—' }}</td>
-        <td class="td-mono td-muted">{{ u.last_seen[:10] if u.last_seen else '—' }}</td>
+        <td class="dim">{{ u.first_seen[:10] if u.first_seen else '—' }}</td>
+        <td class="dim">{{ u.last_seen[:10] if u.last_seen else '—' }}</td>
         {% if q and u.subscriptions is defined %}
         <td>
           {% for s in u.subscriptions %}
           <span class="badge badge-{{ s.status }}">{{ s.name or s.product_id }}</span>
           {% else %}
-          <span class="td-muted">нет</span>
+          <span class="dim">нет</span>
           {% endfor %}
         </td>
         {% endif %}

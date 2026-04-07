@@ -2,33 +2,33 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h1>Dashboard</h1>
-  <span class="subtitle">обзор системы</span>
+<div class="page-head">
+  <h1>DASHBOARD</h1>
+  <span class="tag">обзор системы</span>
 </div>
 
-<div class="cards">
-  <div class="card">
-    <div class="card-label">Пользователей</div>
-    <div class="card-value orange">{{ stats.total_users }}</div>
+<div class="stats">
+  <div class="stat accent">
+    <div class="stat-label">Пользователей</div>
+    <div class="stat-num">{{ stats.total_users }}</div>
   </div>
-  <div class="card">
-    <div class="card-label">Активных подписок</div>
-    <div class="card-value green">{{ stats.active }}</div>
+  <div class="stat green">
+    <div class="stat-label">Активных подписок</div>
+    <div class="stat-num">{{ stats.active }}</div>
   </div>
-  <div class="card">
-    <div class="card-label">Истекает за 3 дня</div>
-    <div class="card-value yellow">{{ stats.expiring_3d }}</div>
+  <div class="stat yellow">
+    <div class="stat-label">Истекает за 3 дня</div>
+    <div class="stat-num">{{ stats.expiring_3d }}</div>
   </div>
-  <div class="card">
-    <div class="card-label">Истекло / Отменено</div>
-    <div class="card-value red">{{ stats.expired_cancelled }}</div>
+  <div class="stat red">
+    <div class="stat-label">Истекло / Отменено</div>
+    <div class="stat-num">{{ stats.expired_cancelled }}</div>
   </div>
 </div>
 
 {% if expiring %}
-<div class="section-title">Истекают в ближайшие 3 дня</div>
-<div class="table-wrap">
+<div class="section-head">Истекают в ближайшие 3 дня</div>
+<div class="tbl-wrap">
   <table>
     <thead>
       <tr>
@@ -41,21 +41,21 @@
     <tbody>
       {% for s in expiring %}
       <tr>
-        <td class="td-mono">{{ s.telegram_id }}</td>
+        <td>{{ s.telegram_id }}</td>
         <td>
-          {% if s.username %}<span>@{{ s.username }}</span>{% else %}<span class="td-muted">—</span>{% endif %}
-          {% if s.first_name %}<span class="td-muted"> · {{ s.first_name }}</span>{% endif %}
+          {% if s.username %}<span style="color:var(--accent)">@{{ s.username }}</span>{% else %}<span class="dim">—</span>{% endif %}
+          {% if s.first_name %}<span class="dim"> · {{ s.first_name }}</span>{% endif %}
         </td>
         <td>{{ s.product_name or s.product_id }}</td>
-        <td class="td-mono" style="color:var(--yellow)">{{ s.active_until[:10] if s.active_until else '—' }}</td>
+        <td style="color:var(--yellow)">{{ s.active_until[:10] if s.active_until else '—' }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% else %}
-<div class="table-wrap">
-  <div class="empty">Нет подписок, истекающих в ближайшие 3 дня ✓</div>
+<div class="tbl-wrap">
+  <div class="empty">Нет подписок, истекающих в ближайшие 3 дня</div>
 </div>
 {% endif %}
 {% endblock %}

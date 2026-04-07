@@ -85,7 +85,7 @@ async def dashboard(request: Request) -> HTMLResponse:
     stats = await repo.get_stats(settings.DB_PATH)
     expiring = await repo.get_expiring_subscriptions(settings.DB_PATH, days=3)
     return templates.TemplateResponse(
-        request, "admin/dashboard.html", {"stats": stats, "expiring": expiring}
+        request, "admin/dashboard.html", {"stats": stats, "expiring": expiring, "active": "dashboard"}
     )
 
 
@@ -102,7 +102,7 @@ async def users_list(request: Request, q: str = "") -> HTMLResponse:
     else:
         users = await _get_all_users()
     return templates.TemplateResponse(
-        request, "admin/users.html", {"users": users, "q": q}
+        request, "admin/users.html", {"users": users, "q": q, "active": "users"}
     )
 
 
@@ -128,7 +128,7 @@ async def subscriptions_list(request: Request, status: str = "") -> HTMLResponse
     return templates.TemplateResponse(
         request,
         "admin/subscriptions.html",
-        {"subs": subs, "status_filter": status},
+        {"subs": subs, "status_filter": status, "active": "subscriptions"},
     )
 
 
@@ -191,7 +191,7 @@ async def products_list(request: Request, msg: str = "") -> HTMLResponse:
         return redir
     products = await repo.get_all_products(settings.DB_PATH)
     return templates.TemplateResponse(
-        request, "admin/products.html", {"products": products, "msg": msg}
+        request, "admin/products.html", {"products": products, "msg": msg, "active": "products"}
     )
 
 
@@ -205,6 +205,7 @@ async def product_create(
     discussion_id: Annotated[int, Form()],
     prodamus_url: Annotated[str, Form()],
     price: Annotated[int, Form()],
+    subscription_id: Annotated[int, Form()],
 ) -> HTMLResponse:
     if redir := _redirect_if_unauthed(request):
         return redir
@@ -219,13 +220,14 @@ async def product_create(
                 "discussion_id": discussion_id,
                 "prodamus_url": prodamus_url,
                 "price": price,
+                "subscription_id": subscription_id,
             },
         )
         return RedirectResponse("/admin/products?msg=created", status_code=302)
     except Exception as e:
         products = await repo.get_all_products(settings.DB_PATH)
         return templates.TemplateResponse(
-            request, "admin/products.html", {"products": products, "msg": "", "error": str(e)}
+            request, "admin/products.html", {"products": products, "msg": "", "error": str(e), "active": "products"}
         )
 
 
@@ -237,7 +239,7 @@ async def product_edit_form(request: Request, product_id: str) -> HTMLResponse:
     if not product:
         return RedirectResponse("/admin/products", status_code=302)
     return templates.TemplateResponse(
-        request, "admin/product_edit.html", {"product": product, "error": None}
+        request, "admin/product_edit.html", {"product": product, "error": None, "active": "products"}
     )
 
 
@@ -251,6 +253,7 @@ async def product_edit_submit(
     discussion_id: Annotated[int, Form()],
     prodamus_url: Annotated[str, Form()],
     price: Annotated[int, Form()],
+    subscription_id: Annotated[int, Form()],
 ) -> HTMLResponse:
     if redir := _redirect_if_unauthed(request):
         return redir
@@ -265,13 +268,14 @@ async def product_edit_submit(
                 "discussion_id": discussion_id,
                 "prodamus_url": prodamus_url,
                 "price": price,
+                "subscription_id": subscription_id,
             },
         )
         return RedirectResponse("/admin/products?msg=updated", status_code=302)
     except Exception as e:
         product = await repo.get_product(product_id, settings.DB_PATH) or {}
         return templates.TemplateResponse(
-            request, "admin/product_edit.html", {"product": product, "error": str(e)}
+            request, "admin/product_edit.html", {"product": product, "error": str(e), "active": "products"}
         )
 
 
