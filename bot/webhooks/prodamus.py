@@ -15,11 +15,16 @@ router = APIRouter(prefix="/payment")
 
 
 def _parse_order_num(order_num: str) -> tuple[int, str] | tuple[None, None]:
-    """Извлекает tg_id и product_id из order_num вида tg_{tg_id}_{product_id}_{ts}."""
-    parts = order_num.split("_", 3)
-    if len(parts) >= 3 and parts[0] == "tg":
+    """Извлекает tg_id и product_id из order_num вида tg_{tg_id}_{product_id}_{ts}.
+
+    product_id может содержать подчёркивания, поэтому timestamp отрезаем справа.
+    """
+    parts = order_num.split("_")
+    if len(parts) >= 4 and parts[0] == "tg":
         try:
-            return int(parts[1]), parts[2]
+            tg_id = int(parts[1])
+            product_id = "_".join(parts[2:-1])
+            return tg_id, product_id
         except ValueError:
             pass
     return None, None
