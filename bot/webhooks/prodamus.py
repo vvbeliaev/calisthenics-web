@@ -53,6 +53,8 @@ async def payment_webhook(request: Request) -> PlainTextResponse:
 
     # Subscription block from Prodamus (present for subscription events)
     sub_block = nested.get("subscription", {})
+    if sub_block:
+        logger.info("Prodamus subscription block: %s", sub_block)
     action_code = sub_block.get("action_code", "")
     prodamus_sub_id = sub_block.get("id", "")
 

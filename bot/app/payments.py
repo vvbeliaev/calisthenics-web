@@ -43,13 +43,30 @@ async def process_payment(
         await _handle_failure(ctx, tg_id, product_id)
         return
 
-    # Success: initial payment or auto_payment — activate/extend subscription
     product = await repo.get_product(product_id, ctx.db_path)
     if not product:
         logger.error("Product not found: %s", product_id)
         return
 
-    is_auto = action_code == "auto_payment"
+    if action_code == "auto_payment":
+        await _handle_rebill(ctx, tg_id, product_id, product, amount, order_id)
+    else:
+        await _handle_initial_payment(
+            ctx, tg_id, product_id, product, amount, order_id, prodamus_sub_id,
+        )
+
+
+async def _handle_initial_payment(
+    ctx: AppContext,
+    tg_id: int,
+    product_id: str,
+    product: dict,
+    amount: str,
+    order_id: str,
+    prodamus_sub_id: str,
+) -> None:
+    """First subscription payment: activate, create invite links, notify."""
+    from ui import keyboards, messages
 
     try:
         channel_link, discussion_link = await subscriptions.grant(
@@ -57,28 +74,57 @@ async def process_payment(
             prodamus_sub_id=prodamus_sub_id,
             notify_user=False,
         )
-        if is_auto:
-            await ctx.bot.send_message(
-                tg_id,
-                messages.format_subscription_renewed(product["name"]),
-                parse_mode="HTML",
-            )
-        else:
-            await ctx.bot.send_message(
-                tg_id,
-                messages.format_payment_success(
-                    product["name"], channel_link, discussion_link
-                ),
-                parse_mode="HTML",
-            )
+        await ctx.bot.send_message(
+            tg_id,
+            messages.format_payment_success(
+                product["name"], channel_link, discussion_link
+            ),
+            parse_mode="HTML",
+        )
     except Exception as e:
-        logger.error("grant / notify user failed: %s", e)
+        logger.error("initial grant failed: %s", e)
         return
 
     try:
-        await _notify_admin(ctx, tg_id, product, amount, order_id, is_auto)
+        await _notify_admin(ctx, tg_id, product, amount, order_id)
     except Exception as e:
         logger.error("notify_admin failed: %s", e)
+
+
+async def _handle_rebill(
+    ctx: AppContext,
+    tg_id: int,
+    product_id: str,
+    product: dict,
+    amount: str,
+    order_id: str,
+) -> None:
+    """Recurring auto-payment: extend dates + notify. No invite links needed."""
+    from ui import messages
+
+    try:
+        await repo.activate_subscription(
+            tg_id, product_id, order_id=order_id, db_path=ctx.db_path,
+        )
+    except Exception as e:
+        logger.error("rebill activate failed: %s", e)
+        return
+
+    try:
+        await ctx.bot.send_message(
+            tg_id,
+            messages.format_subscription_renewed(product["name"]),
+            parse_mode="HTML",
+        )
+    except Exception as e:
+        logger.warning("rebill notify user failed: %s", e)
+
+    try:
+        await _notify_admin(ctx, tg_id, product, amount, order_id, is_auto=True)
+    except Exception as e:
+        logger.error("notify_admin failed: %s", e)
+
+    logger.info("Rebill ok: tg_id=%s product=%s", tg_id, product_id)
 
 
 async def _handle_deactivation(
