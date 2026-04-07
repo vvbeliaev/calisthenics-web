@@ -1,10 +1,11 @@
 """Клиентский контур: /start, кнопки оплаты и ссылок."""
 
 import logging
+from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, FSInputFile
 
 from app.context import AppContext
 from app import admin as app_admin
@@ -77,9 +78,10 @@ async def cmd_start(msg: Message, app: AppContext) -> None:
     if msg.from_user.id == settings.ADMIN_ID:
         await msg.answer("🔧 Панель администратора", reply_markup=keyboards.admin_panel_kb())
 
-    if settings.WELCOME_PHOTO:
+    welcome_photo = Path(__file__).resolve().parent.parent / "assets" / "welcome.jpg"
+    if welcome_photo.exists():
         await msg.answer_photo(
-            photo=settings.WELCOME_PHOTO,
+            photo=FSInputFile(welcome_photo),
             caption=messages.WELCOME_TEXT,
             parse_mode="HTML",
             reply_markup=kb,

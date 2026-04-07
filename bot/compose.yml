@@ -10,5 +10,4 @@ services:
       - ADMIN_ID=${ADMIN_ID}
       - PRODAMUS_SECRET=${PRODAMUS_SECRET}
       - TEST_MODE=${TEST_MODE:-false}
-      - WELCOME_PHOTO=${WELCOME_PHOTO:-}
       - DB_PATH=${DB_PATH:-/data/subscribers.db}
