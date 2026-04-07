@@ -19,7 +19,6 @@ async def process_payment(
     amount: str,
     payment_status: str,
     action_code: str = "",
-    prodamus_sub_id: str = "",
 ) -> None:
     """Handle a Prodamus payment/subscription callback.
 
@@ -52,7 +51,7 @@ async def process_payment(
         await _handle_rebill(ctx, tg_id, product_id, product, amount, order_id)
     else:
         await _handle_initial_payment(
-            ctx, tg_id, product_id, product, amount, order_id, prodamus_sub_id,
+            ctx, tg_id, product_id, product, amount, order_id,
         )
 
 
@@ -63,7 +62,6 @@ async def _handle_initial_payment(
     product: dict,
     amount: str,
     order_id: str,
-    prodamus_sub_id: str,
 ) -> None:
     """First subscription payment: activate, create invite links, notify."""
     from ui import keyboards, messages
@@ -71,7 +69,6 @@ async def _handle_initial_payment(
     try:
         channel_link, discussion_link = await subscriptions.grant(
             ctx, tg_id, product_id, order_id,
-            prodamus_sub_id=prodamus_sub_id,
             notify_user=False,
         )
         await ctx.bot.send_message(

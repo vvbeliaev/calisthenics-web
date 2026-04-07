@@ -34,7 +34,6 @@
         <th>Статус</th>
         <th>Активна до</th>
         <th>Order ID</th>
-        <th>Sub ID</th>
         <th>Обновлено</th>
         <th></th>
       </tr>
@@ -54,7 +53,6 @@
           {{ s.active_until[:10] if s.active_until else '—' }}
         </td>
         <td class="dim" style="font-size:11px">{{ (s.order_id or '—')[:12] }}</td>
-        <td class="dim" style="font-size:11px">{{ (s.prodamus_sub_id or '—')[:12] }}</td>
         <td class="dim">{{ s.updated_at[:10] if s.updated_at else '—' }}</td>
         <td>
           <div class="flex gap-2">

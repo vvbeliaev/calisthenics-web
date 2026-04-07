@@ -88,7 +88,6 @@ async def upsert_subscription(
     status: str,
     active_until: str | None = None,
     order_id: str | None = None,
-    prodamus_sub_id: str | None = None,
     db_path: str = "",
 ) -> None:
     now = _now()
@@ -96,16 +95,15 @@ async def upsert_subscription(
         await db.execute(
             """
             INSERT INTO subscriptions
-                (telegram_id, product_id, status, active_until, order_id, prodamus_sub_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (telegram_id, product_id, status, active_until, order_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(telegram_id, product_id) DO UPDATE SET
-                status          = excluded.status,
-                active_until    = COALESCE(excluded.active_until, active_until),
-                order_id        = COALESCE(excluded.order_id, order_id),
-                prodamus_sub_id = COALESCE(excluded.prodamus_sub_id, prodamus_sub_id),
-                updated_at      = excluded.updated_at
+                status       = excluded.status,
+                active_until = COALESCE(excluded.active_until, active_until),
+                order_id     = COALESCE(excluded.order_id, order_id),
+                updated_at   = excluded.updated_at
         """,
-            (telegram_id, product_id, status, active_until, order_id, prodamus_sub_id, now, now),
+            (telegram_id, product_id, status, active_until, order_id, now, now),
         )
         await db.commit()
 
@@ -116,7 +114,6 @@ async def activate_subscription(
     order_id: str,
     db_path: str,
     days: int = 30,
-    prodamus_sub_id: str | None = None,
 ) -> None:
     """Activate subscription, extending from MAX(existing active_until, now) + days."""
     now = datetime.utcnow()
@@ -138,16 +135,15 @@ async def activate_subscription(
         await db.execute(
             """
             INSERT INTO subscriptions
-                (telegram_id, product_id, status, active_until, order_id, prodamus_sub_id, created_at, updated_at)
-            VALUES (?, ?, 'active', ?, ?, ?, ?, ?)
+                (telegram_id, product_id, status, active_until, order_id, created_at, updated_at)
+            VALUES (?, ?, 'active', ?, ?, ?, ?)
             ON CONFLICT(telegram_id, product_id) DO UPDATE SET
-                status          = 'active',
-                active_until    = excluded.active_until,
-                order_id        = excluded.order_id,
-                prodamus_sub_id = COALESCE(excluded.prodamus_sub_id, prodamus_sub_id),
-                updated_at      = excluded.updated_at
+                status       = 'active',
+                active_until = excluded.active_until,
+                order_id     = excluded.order_id,
+                updated_at   = excluded.updated_at
         """,
-            (telegram_id, product_id, until, order_id, prodamus_sub_id, now_str, now_str),
+            (telegram_id, product_id, until, order_id, now_str, now_str),
         )
         await db.commit()
 
@@ -164,34 +160,6 @@ async def set_subscription_status(
             (status, _now(), telegram_id, product_id),
         )
         await db.commit()
-
-
-async def get_subscription_by_prodamus_id(
-    prodamus_sub_id: str, db_path: str
-) -> dict | None:
-    """Find subscription by Prodamus subscription instance ID (for auto-payments)."""
-    async with aiosqlite.connect(db_path) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM subscriptions WHERE prodamus_sub_id = ?",
-            (prodamus_sub_id,),
-        ) as cur:
-            row = await cur.fetchone()
-            return dict(row) if row else None
-
-
-async def get_product_by_subscription_id(
-    subscription_id: int, db_path: str
-) -> dict | None:
-    """Find product by Prodamus subscription_id."""
-    async with aiosqlite.connect(db_path) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM products WHERE subscription_id = ?",
-            (subscription_id,),
-        ) as cur:
-            row = await cur.fetchone()
-            return dict(row) if row else None
 
 
 async def create_product(db_path: str, data: dict) -> None:

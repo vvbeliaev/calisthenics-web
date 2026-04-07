@@ -31,7 +31,6 @@ async def init_tables(db_path: str) -> None:
                 product_id          TEXT NOT NULL REFERENCES products(product_id),
                 active_until        TEXT,
                 order_id            TEXT,
-                prodamus_sub_id     TEXT,
                 status              TEXT NOT NULL DEFAULT 'pending',
                 created_at          TEXT NOT NULL,
                 updated_at          TEXT NOT NULL,

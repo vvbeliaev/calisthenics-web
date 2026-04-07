@@ -7,7 +7,6 @@ from fastapi.responses import PlainTextResponse
 
 from app.context import AppContext
 from app import payments
-from db import repo
 from services.prodamus import verify_signature, _unflatten
 
 logger = logging.getLogger(__name__)
@@ -60,10 +59,8 @@ async def payment_webhook(request: Request) -> PlainTextResponse:
         order_num, post_data.get("_param_telegram_id"),
     )
     action_code = sub_block.get("action_code", "")
-    prodamus_sub_id = sub_block.get("id", "")
 
-    # Try to identify user: first from order_num, then from _param_telegram_id,
-    # then from prodamus_sub_id mapping in DB (for auto-payments)
+    # Identify user: from order_num, then from _param_telegram_id
     tg_id, product_id = _parse_order_num(order_num)
 
     if tg_id is None:
@@ -71,31 +68,16 @@ async def payment_webhook(request: Request) -> PlainTextResponse:
         if param_tg.isdigit():
             tg_id = int(param_tg)
 
-    if tg_id is None and prodamus_sub_id:
-        existing_sub = await repo.get_subscription_by_prodamus_id(
-            prodamus_sub_id, ctx.db_path
-        )
-        if existing_sub:
-            tg_id = existing_sub["telegram_id"]
-            product_id = existing_sub["product_id"]
-
-    if product_id is None and sub_block:
-        product = await repo.get_product_by_subscription_id(
-            int(sub_block.get("subscription_id", 0)), ctx.db_path
-        )
-        if product:
-            product_id = product["product_id"]
-
     if tg_id is None or product_id is None:
         logger.error(
-            "Cannot resolve user/product: order_num=%r sub_block=%r",
-            order_num, sub_block,
+            "Cannot resolve user/product: order_num=%r _param_telegram_id=%r",
+            order_num, post_data.get("_param_telegram_id"),
         )
         return PlainTextResponse("ok")
 
     logger.info(
-        "Prodamus webhook: tg_id=%s product=%s status=%s action=%s order=%s prodamus_sub=%s",
-        tg_id, product_id, payment_status, action_code, order_num, prodamus_sub_id,
+        "Prodamus webhook: tg_id=%s product=%s status=%s action=%s order=%s",
+        tg_id, product_id, payment_status, action_code, order_num,
     )
 
     await payments.process_payment(
@@ -106,7 +88,6 @@ async def payment_webhook(request: Request) -> PlainTextResponse:
         amount=amount,
         payment_status=payment_status,
         action_code=action_code,
-        prodamus_sub_id=prodamus_sub_id,
     )
     return PlainTextResponse("ok")
 
