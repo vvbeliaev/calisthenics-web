@@ -38,6 +38,22 @@ async def process_payment(
         await _handle_deactivation(ctx, tg_id, product_id, action_code)
         return
 
+    if action_code == "auto_payment":
+        if success:
+            product = await repo.get_product(product_id, ctx.db_path)
+            if not product:
+                logger.error("Product not found: %s", product_id)
+                return
+            await _handle_rebill(ctx, tg_id, product_id, product, amount, order_id)
+        else:
+            # Failed rebill attempt — don't revoke, Prodamus will retry
+            # and send "deactivation" if all attempts fail
+            logger.warning(
+                "Rebill failed: tg_id=%s product=%s status=%s",
+                tg_id, product_id, payment_status,
+            )
+        return
+
     if not success:
         await _handle_failure(ctx, tg_id, product_id)
         return
@@ -47,12 +63,9 @@ async def process_payment(
         logger.error("Product not found: %s", product_id)
         return
 
-    if action_code == "auto_payment":
-        await _handle_rebill(ctx, tg_id, product_id, product, amount, order_id)
-    else:
-        await _handle_initial_payment(
-            ctx, tg_id, product_id, product, amount, order_id,
-        )
+    await _handle_initial_payment(
+        ctx, tg_id, product_id, product, amount, order_id,
+    )
 
 
 async def _handle_initial_payment(
@@ -160,17 +173,10 @@ async def _handle_failure(
     tg_id: int,
     product_id: str,
 ) -> None:
-    """Handle failed payment (initial or auto-charge)."""
+    """Handle failed initial payment. Don't revoke — wait for deactivation from Prodamus."""
     from ui import messages
 
-    sub = await repo.get_subscription(tg_id, product_id, ctx.db_path)
-    if sub and sub["status"] == "active":
-        product = await repo.get_product(product_id, ctx.db_path)
-        if product:
-            await repo.set_subscription_status(
-                tg_id, product_id, "cancelled", ctx.db_path
-            )
-            await channels.revoke_access(ctx.bot, tg_id, product)
+    logger.warning("Payment failed: tg_id=%s product=%s", tg_id, product_id)
     try:
         await ctx.bot.send_message(
             tg_id,

@@ -8,38 +8,28 @@ import aiosqlite
 from config import settings
 
 PRODUCTS_TEST = [
-    # {
-    #     "subscription_id": 2834808,
-    #     "product_id": "intermediate",
-    #     "name": "Промежуточный",
-    #     "description": "Для тех, кто освоил базу. 8 уровней, 28 упражнений.",
-    #     "channel_id": -1003802167188,
-    #     "discussion_id": -5184619005,
-    #     "prodamus_url": "https://heartpath.payform.ru/",
-    #     "price": 50,
-    # },
-]
-
-PRODUCTS_BASE = [
-    # {
-    #     "subscription_id": 2834806,
-    #     "product_id": "base",
-    #     "name": "База",
-    #     "description": "Базовая программа для начинающих. 8 уровней, 28 упражнений.",
-    #     "channel_id": -1003797840314,
-    #     "discussion_id": -1003829594565,
-    #     "prodamus_url": "https://heartpath.payform.ru/",
-    #     "price": 2500,
-    # },
     {
         "subscription_id": 2834808,
         "product_id": "intermediate",
         "name": "Промежуточный",
         "description": "Для тех, кто освоил базу. 8 уровней, 28 упражнений.",
+        "channel_id": -1003802167188,
+        "discussion_id": -5184619005,
+        "prodamus_url": "https://heartpath.payform.ru/",
+        "price": 50,
+    },
+]
+
+PRODUCTS_BASE = [
+    {
+        "subscription_id": 2834806,
+        "product_id": "base_1_0",
+        "name": "BAZA 1.0",
+        "description": "Ты только что сделал первый шаг к сильному, гибкому и прокачанному телу — без тренажёров и спортзалов, только с весом своего тела 💪",
         "channel_id": -1003797840314,
         "discussion_id": -1003829594565,
         "prodamus_url": "https://heartpath.payform.ru/",
-        "price": 50,
+        "price": 2500,
     },
 ]
 
