@@ -113,23 +113,19 @@ async def build_payment_url(
     webhook_base_url: str,
     secret: str,
 ) -> str:
-    """Request a signed Prodamus payment link.
+    """Request a signed Prodamus subscription payment link.
 
-    Makes a GET to the payform URL with all params — Prodamus returns
+    Makes a GET to the payform URL with subscription params — Prodamus returns
     the short payment URL as plain text (e.g. https://payform.ru/rsb83xl/).
     order_id encodes tg_id + product_id; returned in webhook as order_num.
+    _param_telegram_id is a pass-through param returned in the webhook.
     """
     order_id = f"tg_{tg_id}_{product['product_id']}_{int(datetime.now().timestamp())}"
     data: dict = {
         "do": "link",
         "order_id": order_id,
-        "products": [
-            {
-                "name": product["name"],
-                "price": str(product["price"]),
-                "quantity": "1",
-            }
-        ],
+        "subscription": str(product["subscription_id"]),
+        "_param_telegram_id": str(tg_id),
         "urlSuccess": f"{webhook_base_url}/payment/success",
         "urlNotification": f"{webhook_base_url}/payment/webhook",
     }

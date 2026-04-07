@@ -81,15 +81,30 @@ def format_payment_failed() -> str:
     )
 
 
+def format_subscription_renewed(product_name: str) -> str:
+    return (
+        f"🔄 <b>Подписка на «{product_name}» продлена!</b>\n\n"
+        "Оплата прошла автоматически. Доступ продолжает действовать."
+    )
+
+
+def format_subscription_deactivated(product_name: str) -> str:
+    return (
+        f"⛔ <b>Подписка на «{product_name}» деактивирована.</b>\n\n"
+        "Доступ к каналу закрыт. Нажми /start чтобы оформить снова."
+    )
+
+
 def format_payment_notification(
     username_info: str,
     tg_id: int,
     product_name: str,
     amount: str,
     order_id: str,
+    label: str = "Payment",
 ) -> str:
     return (
-        f"💰 <b>Новая оплата!</b>\n\n"
+        f"💰 <b>{label}!</b>\n\n"
         f"Пользователь: {username_info}(tg_id: {tg_id})\n"
         f"Продукт: {product_name}\n"
         f"Сумма: {amount} ₽\n"

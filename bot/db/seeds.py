@@ -9,27 +9,20 @@ from config import settings
 
 PRODUCTS_TEST = [
     {
-        "product_id": "beginner",
-        "name": "Начинающий",
-        "description": "Базовая программа для новичков. 8 уровней, 28 упражнений.",
-        "channel_id": -1003475480396,
-        "discussion_id": -1003847085264,
-        "prodamus_url": "https://heartpath.payform.ru/",
-        "price": 1,
-    },
-    {
+        "subscription_id": 2834808,
         "product_id": "intermediate",
         "name": "Промежуточный",
         "description": "Для тех, кто освоил базу. 8 уровней, 28 упражнений.",
         "channel_id": -1003802167188,
         "discussion_id": -5184619005,
         "prodamus_url": "https://heartpath.payform.ru/",
-        "price": 49,
+        "price": 50,
     },
 ]
 
 PRODUCTS_BASE = [
     {
+        "subscription_id": 2834806,
         "product_id": "base",
         "name": "База",
         "description": "Базовая программа для начинающих. 8 уровней, 28 упражнений.",
@@ -54,9 +47,9 @@ async def seed_products(db_path: str) -> None:
         await db.executemany(
             """
             INSERT OR IGNORE INTO products
-                (product_id, name, description, channel_id, discussion_id, prodamus_url, price)
+                (product_id, name, description, channel_id, discussion_id, prodamus_url, price, subscription_id)
             VALUES
-                (:product_id, :name, :description, :channel_id, :discussion_id, :prodamus_url, :price)
+                (:product_id, :name, :description, :channel_id, :discussion_id, :prodamus_url, :price, :subscription_id)
         """,
             PRODUCTS,
         )

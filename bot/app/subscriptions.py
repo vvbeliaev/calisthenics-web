@@ -17,6 +17,7 @@ async def grant(
     order_id: str,
     days: int = 30,
     notify_user: bool = True,
+    prodamus_sub_id: str = "",
 ) -> tuple[str, str]:
     """Activate subscription + grant channel access.
 
@@ -27,7 +28,11 @@ async def grant(
     if not product:
         raise ValueError(f"Продукт «{product_id}» не найден.")
     await repo.activate_subscription(
-        tg_id, product_id, order_id=order_id, db_path=ctx.db_path, days=days
+        tg_id, product_id,
+        order_id=order_id,
+        db_path=ctx.db_path,
+        days=days,
+        prodamus_sub_id=prodamus_sub_id or None,
     )
     channel_link, discussion_link = await channels.grant_access(ctx.bot, tg_id, product)
     if notify_user:
