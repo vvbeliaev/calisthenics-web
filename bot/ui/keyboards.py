@@ -36,10 +36,12 @@ def start_kb(
     sub_map: dict,
     test_mode: bool,
     pay_urls: dict[str, str],
+    onetime_pay_urls: dict[str, str] | None = None,
 ) -> InlineKeyboardMarkup:
     """Build the /start catalog keyboard depending on subscription state.
 
     pay_urls: product_id → ready payment URL (pre-fetched by cmd_start).
+    onetime_pay_urls: type → URL for one-time payments (training, tip). None for admin.
     """
     buttons: list[list[InlineKeyboardButton]] = []
     for p in products:
@@ -63,6 +65,21 @@ def start_kb(
                 text=f"{verb} Оформить подписку — {p['name']} ({p['price']} ₽/мес)",
                 url=pay_url,
             )])
+
+    if onetime_pay_urls:
+        training_url = onetime_pay_urls.get("training", "")
+        tip_url = onetime_pay_urls.get("tip", "")
+        if training_url:
+            buttons.append([InlineKeyboardButton(
+                text="💪 Месяц персонального сопровождения с тренером (50 000 ₽)",
+                url=training_url,
+            )])
+        if tip_url:
+            buttons.append([InlineKeyboardButton(
+                text="🙏 Поблагодарить тренера",
+                url=tip_url,
+            )])
+
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 

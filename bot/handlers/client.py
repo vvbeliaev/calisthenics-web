@@ -46,9 +46,12 @@ async def cmd_start(msg: Message, app: AppContext) -> None:
     subs = await subscriptions.get_user_subs(app, msg.from_user.id)
     sub_map = {s["product_id"]: s for s in subs}
 
+    is_admin = msg.from_user.id == settings.ADMIN_ID
     pay_urls: dict[str, str] = {}
+    onetime_pay_urls: dict[str, str] | None = None
+
     if not settings.TEST_MODE:
-        from services.prodamus import build_payment_url
+        from services.prodamus import build_payment_url, build_onetime_payment_url
         import asyncio
         results = await asyncio.gather(
             *[
@@ -73,9 +76,25 @@ async def cmd_start(msg: Message, app: AppContext) -> None:
             else:
                 logger.warning("Failed to get payment URL for %s: %s", p["product_id"], result)
 
-    kb = keyboards.start_kb(products, sub_map, settings.TEST_MODE, pay_urls)
+        if not is_admin and settings.PRODAMUS_URL:
+            onetime_pay_urls = {"tip": settings.PRODAMUS_URL}
+            try:
+                training_url = await build_onetime_payment_url(
+                    tg_id=msg.from_user.id,
+                    name="Персональное сопровождение тренера (1 месяц)",
+                    price=50000,
+                    prodamus_url=settings.PRODAMUS_URL,
+                    webhook_base_url=settings.WEBHOOK_BASE_URL,
+                    secret=settings.PRODAMUS_SECRET,
+                    order_prefix="training",
+                )
+                onetime_pay_urls["training"] = training_url
+            except Exception as e:
+                logger.warning("Failed to get training payment URL: %s", e)
 
-    if msg.from_user.id == settings.ADMIN_ID:
+    kb = keyboards.start_kb(products, sub_map, settings.TEST_MODE, pay_urls, onetime_pay_urls)
+
+    if is_admin:
         await msg.answer("🔧 Панель администратора", reply_markup=keyboards.admin_panel_kb())
 
     welcome_photo = Path(__file__).resolve().parent.parent / "assets" / "welcome.jpg"

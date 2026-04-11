@@ -137,6 +137,40 @@ async def build_payment_url(
         return r.text.strip()
 
 
+async def build_onetime_payment_url(
+    tg_id: int,
+    name: str,
+    price: int | None,
+    prodamus_url: str,
+    webhook_base_url: str,
+    secret: str,
+    order_prefix: str,
+) -> str:
+    """Request a signed Prodamus one-time payment link.
+
+    price=None means no fixed price (user enters amount on payment page).
+    order_prefix is used to distinguish payment types in order_id (e.g. 'training', 'tip').
+    """
+    order_id = f"tg_{tg_id}_{order_prefix}_{int(datetime.now().timestamp())}"
+    product_entry: dict = {"name": name, "quantity": "1"}
+    if price is not None:
+        product_entry["price"] = str(price)
+    data: dict = {
+        "do": "link",
+        "order_id": order_id,
+        "products": [product_entry],
+        "_param_telegram_id": str(tg_id),
+        "urlSuccess": f"{webhook_base_url}/payment/success",
+        "urlNotification": f"{webhook_base_url}/payment/webhook",
+    }
+    data["signature"] = _sign(data, secret)
+    url = f"{prodamus_url}?{urllib.parse.urlencode(_flatten(data))}"
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(url)
+        r.raise_for_status()
+        return r.text.strip()
+
+
 # ── webhook signature verification ────────────────────────────────────────────
 
 
