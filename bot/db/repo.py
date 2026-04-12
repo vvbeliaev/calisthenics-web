@@ -69,6 +69,31 @@ async def get_subscriptions(telegram_id: int, db_path: str) -> list[dict]:
             return [dict(r) for r in rows]
 
 
+async def get_subscription_links(
+    telegram_id: int, product_id: str, db_path: str
+) -> tuple[str | None, str | None]:
+    async with aiosqlite.connect(db_path) as db:
+        async with db.execute(
+            "SELECT channel_link, discussion_link FROM subscriptions "
+            "WHERE telegram_id = ? AND product_id = ?",
+            (telegram_id, product_id),
+        ) as cur:
+            row = await cur.fetchone()
+            return (row[0], row[1]) if row else (None, None)
+
+
+async def update_subscription_links(
+    telegram_id: int, product_id: str, channel_link: str, discussion_link: str, db_path: str
+) -> None:
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            "UPDATE subscriptions SET channel_link = ?, discussion_link = ?, updated_at = ? "
+            "WHERE telegram_id = ? AND product_id = ?",
+            (channel_link, discussion_link, _now(), telegram_id, product_id),
+        )
+        await db.commit()
+
+
 async def get_subscription(
     telegram_id: int, product_id: str, db_path: str
 ) -> dict | None:

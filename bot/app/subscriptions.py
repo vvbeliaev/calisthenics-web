@@ -32,7 +32,9 @@ async def grant(
         db_path=ctx.db_path,
         days=days,
     )
-    channel_link, discussion_link = await channels.grant_access(ctx.bot, tg_id, product)
+    old_links = await repo.get_subscription_links(tg_id, product_id, ctx.db_path)
+    channel_link, discussion_link = await channels.grant_access(ctx.bot, tg_id, product, old_links)
+    await repo.update_subscription_links(tg_id, product_id, channel_link, discussion_link, ctx.db_path)
     if notify_user:
         from ui import messages
 
@@ -83,7 +85,10 @@ async def relink(ctx: AppContext, tg_id: int, product_id: str) -> tuple[str, str
     sub = await repo.get_subscription(tg_id, product_id, ctx.db_path)
     if not product or not sub or sub["status"] != "active":
         raise ValueError("Подписка неактивна.")
-    return await channels.grant_access(ctx.bot, tg_id, product)
+    old_links = await repo.get_subscription_links(tg_id, product_id, ctx.db_path)
+    channel_link, discussion_link = await channels.grant_access(ctx.bot, tg_id, product, old_links)
+    await repo.update_subscription_links(tg_id, product_id, channel_link, discussion_link, ctx.db_path)
+    return channel_link, discussion_link
 
 
 async def grant_test(ctx: AppContext, tg_id: int, product_id: str) -> tuple[str, str]:
@@ -102,7 +107,10 @@ async def grant_test(ctx: AppContext, tg_id: int, product_id: str) -> tuple[str,
         db_path=ctx.db_path,
     )
     logger.info("TEST_MODE: granted %s to %s (expires now)", product_id, tg_id)
-    return await channels.grant_access(ctx.bot, tg_id, product)
+    old_links = await repo.get_subscription_links(tg_id, product_id, ctx.db_path)
+    channel_link, discussion_link = await channels.grant_access(ctx.bot, tg_id, product, old_links)
+    await repo.update_subscription_links(tg_id, product_id, channel_link, discussion_link, ctx.db_path)
+    return channel_link, discussion_link
 
 
 async def get_user_subs(ctx: AppContext, tg_id: int) -> list[dict]:

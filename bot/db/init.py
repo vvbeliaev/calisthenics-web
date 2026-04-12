@@ -32,9 +32,17 @@ async def init_tables(db_path: str) -> None:
                 active_until        TEXT,
                 order_id            TEXT,
                 status              TEXT NOT NULL DEFAULT 'pending',
+                channel_link        TEXT,
+                discussion_link     TEXT,
                 created_at          TEXT NOT NULL,
                 updated_at          TEXT NOT NULL,
                 UNIQUE(telegram_id, product_id)
             )
         """)
+        # migrate existing DBs that don't have the link columns yet
+        for col in ("channel_link", "discussion_link"):
+            try:
+                await db.execute(f"ALTER TABLE subscriptions ADD COLUMN {col} TEXT")
+            except Exception:
+                pass  # column already exists
         await db.commit()
