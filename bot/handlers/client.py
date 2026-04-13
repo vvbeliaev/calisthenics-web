@@ -22,11 +22,12 @@ def _msg(call: CallbackQuery) -> Message:
 
 
 def register_client_handlers(dp: Dispatcher) -> None:
-    dp.message.register(cmd_start, Command("start"))
+    dp.message.register(cmd_start, Command("start"), F.chat.type == "private")
     dp.callback_query.register(cb_relink, F.data.startswith("relink:"))
     dp.callback_query.register(cb_test_grant, F.data.startswith("test_grant:"))
     dp.message.register(
         user_message_to_admin,
+        F.chat.type == "private",
         F.text,
         ~F.text.startswith("/"),
         F.from_user.id != settings.ADMIN_ID,
