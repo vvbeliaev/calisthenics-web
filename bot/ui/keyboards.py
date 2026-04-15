@@ -71,7 +71,7 @@ def start_kb(
         tip_url = onetime_pay_urls.get("tip", "")
         if training_url:
             buttons.append([InlineKeyboardButton(
-                text="💪 Месяц персонального сопровождения с тренером (50 000 ₽)",
+                text="💪 Месяц персонального сопровождения с тренером (30 000 ₽)",
                 url=training_url,
             )])
         if tip_url:
