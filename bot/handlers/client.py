@@ -83,7 +83,7 @@ async def cmd_start(msg: Message, app: AppContext) -> None:
                 training_url = await build_onetime_payment_url(
                     tg_id=msg.from_user.id,
                     name="Персональное сопровождение тренера (1 месяц)",
-                    price=50000,
+                    price=30000,
                     prodamus_url=settings.PRODAMUS_URL,
                     webhook_base_url=settings.WEBHOOK_BASE_URL,
                     secret=settings.PRODAMUS_SECRET,
