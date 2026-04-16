@@ -7,6 +7,47 @@
   <span class="tag">{{ subs | length }} записей</span>
 </div>
 
+{% if grant_ok %}
+<div class="alert alert-ok">✓ Подписка выдана пользователю {{ grant_ok }}</div>
+{% endif %}
+{% if grant_error %}
+<div class="alert alert-err">✕ {{ grant_error }}</div>
+{% endif %}
+
+<div class="tbl-wrap mt-4" style="margin-bottom: 28px">
+  <div class="tbl-bar">
+    <span class="tbl-title">Выдать подписку вручную</span>
+  </div>
+  <div style="padding: 20px">
+    <form method="POST" action="/admin/subscriptions/grant">
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr auto auto">
+        <div class="field">
+          <label>Telegram ID</label>
+          <input type="number" name="telegram_id" class="input" placeholder="123456789" required>
+        </div>
+        <div class="field">
+          <label>Продукт</label>
+          <select name="product_id" class="select" required>
+            {% for p in products %}
+            <option value="{{ p.product_id }}">{{ p.name }}</option>
+            {% else %}
+            <option disabled>Нет продуктов</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Дней</label>
+          <input type="number" name="days" class="input" value="30" min="1" max="3650" style="width:90px">
+        </div>
+        <div class="field" style="justify-content: flex-end">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-primary">+ Выдать</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="tbl-wrap">
   <div class="tbl-bar">
     <span class="tbl-title">Все подписки</span>

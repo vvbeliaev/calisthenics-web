@@ -121,15 +121,66 @@ async def _get_all_users() -> list[dict]:
 
 
 @router.get("/subscriptions", response_class=HTMLResponse)
-async def subscriptions_list(request: Request, status: str = "") -> HTMLResponse:
+async def subscriptions_list(
+    request: Request, status: str = "", grant_ok: str = ""
+) -> HTMLResponse:
     if redir := _redirect_if_unauthed(request):
         return redir
     subs = await _get_subscriptions_filtered(status)
+    products = await repo.get_all_products(settings.DB_PATH)
     return templates.TemplateResponse(
         request,
         "admin/subscriptions.html",
-        {"subs": subs, "status_filter": status, "active": "subscriptions"},
+        {
+            "subs": subs,
+            "status_filter": status,
+            "active": "subscriptions",
+            "products": products,
+            "grant_ok": grant_ok,
+            "grant_error": None,
+        },
     )
+
+
+@router.post("/subscriptions/grant", response_class=HTMLResponse)
+async def subscription_grant(
+    request: Request,
+    telegram_id: Annotated[int, Form()],
+    product_id: Annotated[str, Form()],
+    days: Annotated[int, Form()] = 30,
+) -> HTMLResponse:
+    if redir := _redirect_if_unauthed(request):
+        return redir
+    from app import subscriptions
+
+    ctx = request.app.state.app_ctx
+    try:
+        await subscriptions.grant(
+            ctx,
+            telegram_id,
+            product_id,
+            order_id=f"admin_manual_{telegram_id}_{product_id}",
+            days=days,
+            notify_user=True,
+        )
+        return RedirectResponse(
+            f"/admin/subscriptions?grant_ok={telegram_id}", status_code=302
+        )
+    except Exception as e:
+        subs = await _get_subscriptions_filtered("")
+        products = await repo.get_all_products(settings.DB_PATH)
+        return templates.TemplateResponse(
+            request,
+            "admin/subscriptions.html",
+            {
+                "subs": subs,
+                "status_filter": "",
+                "active": "subscriptions",
+                "products": products,
+                "grant_ok": "",
+                "grant_error": str(e),
+            },
+        )
 
 
 async def _get_subscriptions_filtered(status: str) -> list[dict]:
